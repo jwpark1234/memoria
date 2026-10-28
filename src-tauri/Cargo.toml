@@ -1,6 +1,6 @@
 [package]
 name = "memoria"
-version = "0.1.5"
+version = "0.1.6"
 description = "가볍고 빠른 동기화 메모 위젯"
 edition = "2021"
 
