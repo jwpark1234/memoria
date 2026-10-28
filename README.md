@@ -62,6 +62,10 @@ npm run tauri dev      # 데스크톱 위젯으로 개발
   - macOS와 Ubuntu용은 그 OS에서 빌드해야 합니다. 대신 GitHub Actions(`.github/workflows/release.yml`)로 세 OS를 한 번에 빌드할 수 있습니다.
     - 저장소 Secrets에 `.env.local`의 6개 값을 같은 이름으로 등록합니다.
     - `v0.1.0` 같은 태그를 푸시하면 Releases에 설치 파일 초안이 생깁니다.
+  - **자동 업데이트**: 설치된 앱은 1시간마다 Releases의 `latest.json`을 확인하고, 새 버전이 있으면 제목 옆에 업데이트 버튼을 띄웁니다.
+    - 새 버전을 낼 때는 `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`의 버전을 함께 올리고 태그를 푸시한 뒤, 초안을 **게시(Publish)** 합니다.
+    - 업데이트 파일은 `~/.tauri/memoria.key`로 서명합니다. 이 파일의 내용을 저장소 Secrets에 `TAURI_SIGNING_PRIVATE_KEY`로 등록합니다. 키를 잃어버리면 이미 설치된 앱은 더 이상 자동 업데이트를 받을 수 없으니 따로 백업해 둡니다.
+    - 로컬에서 `npm run tauri build`를 할 때도 같은 키가 필요합니다: `TAURI_SIGNING_PRIVATE_KEY_PATH=~/.tauri/memoria.key`
   - 서명하지 않은 빌드라서 처음 실행할 때 경고가 뜹니다.
     - Windows: SmartScreen에서 "추가 정보 → 실행"
     - macOS: 앱을 우클릭 → 열기. "손상됨"이라고 나오면 `xattr -cr /Applications/Memoria.app`
@@ -69,6 +73,7 @@ npm run tauri dev      # 데스크톱 위젯으로 개발
   - `npm run tauri build`가 `dist`를 데스크톱용으로 덮어쓰므로, 배포 직전에 반드시 `npm run build`를 다시 실행합니다.
   - 배포한 도메인(`<project>.web.app` 등)을 Firebase Authentication → 설정 → **승인된 도메인**에 추가해야 합니다.
   - 휴대폰 브라우저에서 접속한 뒤 "홈 화면에 추가"를 누릅니다.
+  - 새로 배포하면 열려 있는 앱이 이를 알아채고 제목 옆에 업데이트 버튼을 띄웁니다. 누르면 새 버전으로 다시 불러옵니다.
 
 ## 데이터 구조
 

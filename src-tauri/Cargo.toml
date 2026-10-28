@@ -1,6 +1,6 @@
 [package]
 name = "memoria"
-version = "0.1.1"
+version = "0.1.2"
 description = "가볍고 빠른 동기화 메모 위젯"
 edition = "2021"
 
@@ -15,7 +15,10 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1" # tauri.conf.json의 plugins 설정을 generate_context!가 펼칠 때 쓴다
 tokio = { version = "1", features = ["net", "io-util", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 sha2 = "0.10"

@@ -32,6 +32,9 @@ pub fn run() {
         // 트레이에 숨어 있을 때 앱을 또 실행하면 새로 띄우지 않고 기존 창을 보여준다.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_opener::init())
+        // 새 버전 확인·설치(GitHub Releases의 latest.json)와 설치 후 재시작
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let toggle = MenuItem::with_id(app, "toggle", "열기/숨기기", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;

@@ -93,7 +93,6 @@ html.tauri .app { opacity: var(--opacity, 1); }
 }
 
 .title {
-  flex: 1;
   margin-left: 4px;
   font-size: 13px;
   font-weight: 600;
@@ -122,6 +121,12 @@ html.tauri .app { opacity: var(--opacity, 1); }
 .icon-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 .icon-btn.active { color: var(--accent); }
 .push { margin-left: auto; }
+.grow { flex: 1; align-self: stretch; }
+
+/* 새 버전 알림 (제목 옆) */
+.icon-btn.update { color: var(--accent); }
+.icon-btn.update.busy { animation: blink 1s ease-in-out infinite; cursor: default; }
+@keyframes blink { 50% { opacity: 0.35; } }
 
 /* 위젯 설정 패널 */
 .widget-panel {

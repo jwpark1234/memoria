@@ -15,29 +15,31 @@ export default defineConfig({
       },
   plugins: [
     react(),
-    !isTauri &&
-      VitePWA({
-        registerType: 'autoUpdate',
-        // 구글 로그인에서 돌아오는 Firebase 처리 페이지(/__/auth/handler)를 서비스워커가 index.html로 바꿔치지 않게 한다.
-        workbox: { navigateFallbackDenylist: [/^\/__\//] },
-        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
-        manifest: {
-          name: 'Memoria',
-          short_name: 'Memoria',
-          description: '가볍고 빠른 동기화 메모',
-          lang: 'ko',
-          display: 'standalone',
-          start_url: '/',
-          theme_color: '#1c1c1e',
-          background_color: '#1c1c1e',
-          icons: [
-            { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-            { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-            { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          ],
-        },
-      }),
+    VitePWA({
+      // 데스크톱에서는 꺼 둔다. 꺼져 있어도 virtual:pwa-register는 아무 일도 안 하는 모듈로 남아 import할 수 있다.
+      disable: isTauri,
+      // 새 버전을 바로 적용하지 않고 기다렸다가, 사용자가 업데이트 버튼을 누르면 적용한다 (lib/update.ts).
+      registerType: 'prompt',
+      // 구글 로그인에서 돌아오는 Firebase 처리 페이지(/__/auth/handler)를 서비스워커가 index.html로 바꿔치지 않게 한다.
+      workbox: { navigateFallbackDenylist: [/^\/__\//] },
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
+      manifest: {
+        name: 'Memoria',
+        short_name: 'Memoria',
+        description: '가볍고 빠른 동기화 메모',
+        lang: 'ko',
+        display: 'standalone',
+        start_url: '/',
+        theme_color: '#1c1c1e',
+        background_color: '#1c1c1e',
+        icons: [
+          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+    }),
   ],
   clearScreen: false,
   server: { port: 5173, strictPort: true },

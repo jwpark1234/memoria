@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Memoria",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.jwpark.memoria",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -37,6 +37,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQxNDJDRDY4RDU2MEQ1REEKUldUYTFXRFZhTTFDUVdKSTIyQ3NIL3ZIejJsOEJZWThFQzVxZ0RJM0dWK0NIdlB5RmZxcUI0WDQK",
+      "endpoints": [
+        "https://github.com/jwpark1234/memoria/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

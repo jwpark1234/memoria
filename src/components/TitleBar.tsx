@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { applyUpdate, useUpdate } from '../lib/update'
 import { setWidget, useWidget, win as tauriWindow } from '../lib/widget'
 import { Icon } from './Icon'
 import { WidgetPanel } from './WidgetPanel'
@@ -6,6 +7,7 @@ import { WidgetPanel } from './WidgetPanel'
 export function TitleBar({ children }: { children?: ReactNode }) {
   const win = tauriWindow
   const { onTop, fixed } = useWidget()
+  const update = useUpdate()
   const [panel, setPanel] = useState(false)
   // 위치 고정 중에는 끌어서 옮길 수 없다
   const drag = win && !fixed ? { 'data-tauri-drag-region': true } : {}
@@ -16,6 +18,17 @@ export function TitleBar({ children }: { children?: ReactNode }) {
         <span className="title" {...drag}>
           Memoria
         </span>
+        {update.available && (
+          <button
+            className={`icon-btn update${update.installing ? ' busy' : ''}`}
+            onClick={applyUpdate}
+            disabled={update.installing}
+            title={update.installing ? '업데이트 중…' : `새 버전${update.version && ` v${update.version}`} 설치 후 다시 시작`}
+          >
+            <Icon name="update" />
+          </button>
+        )}
+        <span className="grow" {...drag} />
         {children}
         {win && (
           <>
