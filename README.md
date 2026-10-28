@@ -12,6 +12,14 @@
 
 하단 상태줄에 동기화 상태가 표시됩니다. 입력 중(회색) → 업로드 중(노랑) → 동기화됨(초록), 오프라인(빨강)일 때는 연결되면 자동으로 업로드됩니다.
 
+## 설치
+
+- **모바일(PWA)**: https://memoria-6104d.web.app
+  - iPhone: Safari로 접속 → 공유 → "홈 화면에 추가"
+  - Android: Chrome으로 접속 → 메뉴 → "앱 설치"
+  - Firebase Hosting(Google 서버)에서 제공되므로 개발 PC가 꺼져 있어도 접속됩니다.
+- **데스크톱**: GitHub Releases에서 OS에 맞는 설치 파일을 받습니다.
+
 ## 개발 환경
 
 - Node.js 20.19+ (권장 22 LTS)
@@ -55,7 +63,8 @@ npm run tauri dev      # 데스크톱 위젯으로 개발
   - 서명하지 않은 빌드라서 처음 실행할 때 경고가 뜹니다.
     - Windows: SmartScreen에서 "추가 정보 → 실행"
     - macOS: 앱을 우클릭 → 열기. "손상됨"이라고 나오면 `xattr -cr /Applications/Memoria.app`
-- **PWA**: `npm run build && npx firebase-tools deploy --only hosting`
+- **PWA**: `npm run build && npx firebase-tools deploy --only hosting --project staging`을 실행하면 https://memoria-6104d.web.app 에 배포됩니다.
+  - `npm run tauri build`가 `dist`를 데스크톱용으로 덮어쓰므로, 배포 직전에 반드시 `npm run build`를 다시 실행합니다.
   - 배포한 도메인(`<project>.web.app` 등)을 Firebase Authentication → 설정 → **승인된 도메인**에 추가해야 합니다.
   - 휴대폰 브라우저에서 접속한 뒤 "홈 화면에 추가"를 누릅니다.
 
