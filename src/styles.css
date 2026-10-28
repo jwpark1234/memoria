@@ -141,6 +141,7 @@ html.tauri .app { opacity: var(--opacity, 1); }
 .widget-panel .row { display: flex; align-items: center; gap: 8px; min-height: 24px; }
 .widget-panel .label { flex: none; width: 40px; color: var(--muted); }
 .widget-panel .value { flex: none; width: 32px; text-align: right; color: var(--muted); }
+.widget-panel .version { color: var(--muted); }
 .widget-panel input[type='range'] { flex: 1; min-width: 0; accent-color: var(--accent); }
 
 .segment {
@@ -310,6 +311,7 @@ html.tauri .app { opacity: var(--opacity, 1); }
 }
 .menu-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
 .menu-item.danger { color: var(--danger); }
+.menu-row.version { justify-content: center; color: var(--muted); font-size: 12px; }
 
 /* 확인창 */
 .overlay {

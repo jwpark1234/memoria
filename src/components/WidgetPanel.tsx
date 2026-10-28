@@ -50,6 +50,11 @@ export function WidgetPanel() {
           </div>
         )}
       </div>
+
+      <div className="row">
+        <span className="label">버전</span>
+        <span className="version">v{__APP_VERSION__}</span>
+      </div>
     </div>
   )
 }

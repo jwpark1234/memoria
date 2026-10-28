@@ -1,18 +1,21 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // Tauri CLI가 beforeDev/BuildCommand 실행 시 설정하는 값. 데스크톱 빌드에는 PWA(서비스워커)가 필요 없다.
 const isTauri = !!process.env.TAURI_ENV_PLATFORM
+const { version } = JSON.parse(readFileSync('package.json', 'utf-8'))
 
 export default defineConfig({
-  // 데스크톱 전용 OAuth 클라이언트 값은 웹(PWA) 번들에 싣지 않는다.
-  define: isTauri
-    ? {}
-    : {
-        'import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID': '""',
-        'import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET': '""',
-      },
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    // 데스크톱 전용 OAuth 클라이언트 값은 웹(PWA) 번들에 싣지 않는다.
+    ...(!isTauri && {
+      'import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID': '""',
+      'import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET': '""',
+    }),
+  },
   plugins: [
     react(),
     VitePWA({

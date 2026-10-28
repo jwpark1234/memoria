@@ -5,7 +5,7 @@ import { Icon } from './Icon'
 
 const THEME_LABEL: Record<Theme, string> = { system: '자동', light: '라이트', dark: '다크' }
 
-// PWA 우상단 … 메뉴: 화면 테마와 로그아웃
+// PWA 우상단 … 메뉴: 화면 테마, 로그아웃, 버전
 export function MoreMenu() {
   const theme = useTheme()
   const [open, setOpen] = useState(false)
@@ -39,6 +39,7 @@ export function MoreMenu() {
           <button className="menu-item danger" role="menuitem" onClick={signOut}>
             로그아웃
           </button>
+          <div className="menu-row version">Memoria v{__APP_VERSION__}</div>
         </div>
       )}
     </div>
