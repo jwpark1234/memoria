@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { deleteNote, NOTE_COLORS, updateNote, type Note } from '../lib/notes'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { deleteNote, updateNote, type Note } from '../lib/notes'
+import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
-import { noteStyle } from './noteStyle'
 
 // 타이핑마다 쓰면 무료 한도(쓰기 2만/일)를 금방 쓰므로 입력이 멈춘 뒤 한 번만 저장한다.
 const SAVE_DELAY = 600
@@ -16,7 +16,7 @@ interface Props {
 
 export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
   const [draft, setDraft] = useState(note.text)
-  const [armed, setArmed] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const latest = useRef(note.text)
   const dirty = useRef(false)
   const timer = useRef<number | undefined>(undefined)
@@ -48,13 +48,6 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
     }
   }, [flush])
 
-  // 확인 대기 상태는 잠시 뒤 풀린다 (window.confirm은 일부 WebView에서 동작하지 않음).
-  useEffect(() => {
-    if (!armed) return
-    const t = window.setTimeout(() => setArmed(false), 2500)
-    return () => window.clearTimeout(t)
-  }, [armed])
-
   const change = (text: string) => {
     setDraft(text)
     latest.current = text
@@ -70,8 +63,10 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
     onBack()
   }
 
+  // 빈 메모는 묻지 않고 지운다
+  const askRemove = () => (latest.current.trim() ? setConfirming(true) : remove())
+
   const remove = () => {
-    if (latest.current.trim() && !armed) return setArmed(true)
     window.clearTimeout(timer.current)
     dirty.current = false
     onTyping(false)
@@ -80,30 +75,19 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
   }
 
   return (
-    <div className="editor" style={noteStyle(note.color)}>
+    <div className="editor">
       <div className="editor-bar">
         <button className="icon-btn" onClick={back} title="목록으로 (Esc)">
           <Icon name="back" />
         </button>
-        <div className="swatches">
-          {NOTE_COLORS.map((c) => (
-            <button
-              key={c}
-              className={`swatch${c === note.color ? ' on' : ''}`}
-              style={{ '--c': `var(--note-${c})` } as CSSProperties}
-              onClick={() => updateNote(uid, note.id, { color: c })}
-              aria-label={c}
-            />
-          ))}
-        </div>
         <button
-          className={`icon-btn${note.pinned ? ' active' : ''}`}
+          className={`icon-btn push${note.pinned ? ' active' : ''}`}
           onClick={() => updateNote(uid, note.id, { pinned: !note.pinned })}
           title="목록 상단에 고정"
         >
           <Icon name="star" filled={note.pinned} />
         </button>
-        <button className={`icon-btn${armed ? ' danger' : ''}`} onClick={remove} title={armed ? '한 번 더 누르면 삭제' : '삭제'}>
+        <button className="icon-btn" onClick={askRemove} title="삭제">
           <Icon name="trash" />
         </button>
       </div>
@@ -115,6 +99,14 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
         onChange={(e) => change(e.target.value)}
         onKeyDown={(e) => e.key === 'Escape' && back()}
       />
+      {confirming && (
+        <ConfirmDialog
+          message="이 메모를 삭제할까요?"
+          confirmLabel="삭제"
+          onConfirm={remove}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </div>
   )
 }

@@ -8,32 +8,29 @@
   --accent: #d49b00;
   --danger: #e5484d;
   --ok: #30a46c;
-
-  --note-yellow: #ffe27a;
-  --note-orange: #ffc48f;
-  --note-pink: #ffb8cc;
-  --note-purple: #d7c4ff;
-  --note-blue: #a9d5ff;
-  --note-green: #b3ecae;
 }
 
+/* 테마: 기본은 OS 설정을 따르고, html[data-theme]으로 직접 고를 수 있다 (lib/theme.ts) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #1c1c1e;
     --surface: #2a2a2d;
     --text: #f2f2f2;
     --muted: #a1a1a6;
     --line: #3a3a3d;
     --accent: #f5c518;
-
-    --note-yellow: #5e4b0c;
-    --note-orange: #6e3814;
-    --note-pink: #6e2443;
-    --note-purple: #48307d;
-    --note-blue: #17426f;
-    --note-green: #1d5530;
   }
 }
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1c1c1e;
+  --surface: #2a2a2d;
+  --text: #f2f2f2;
+  --muted: #a1a1a6;
+  --line: #3a3a3d;
+  --accent: #f5c518;
+}
+:root[data-theme='light'] { color-scheme: light; }
 
 * {
   box-sizing: border-box;
@@ -81,11 +78,18 @@ html.tauri .app { opacity: var(--opacity, 1); }
   display: flex;
   align-items: center;
   gap: 4px;
-  height: calc(36px + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) 6px 0 12px;
+  height: calc(36px + env(safe-area-inset-top) + var(--edge-blur, 0px));
+  padding: calc(env(safe-area-inset-top) + var(--edge-blur, 0px)) 6px 0 12px;
   border-bottom: 1px solid var(--line);
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* iOS 26 홈 화면 앱은 상태바 아래로 약 35pt까지 흐림 효과를 덮어서, 헤더를 그만큼 내린다 */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    :root { --edge-blur: 24px; }
+  }
 }
 
 .title {
@@ -117,7 +121,7 @@ html.tauri .app { opacity: var(--opacity, 1); }
 }
 .icon-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
 .icon-btn.active { color: var(--accent); }
-.icon-btn.danger { color: var(--danger); }
+.push { margin-left: auto; }
 
 /* 위젯 설정 패널 */
 .widget-panel {
@@ -171,6 +175,8 @@ html.tauri .app { opacity: var(--opacity, 1); }
   color: var(--text);
   font: inherit;
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .search:focus { border-color: var(--accent); }
 
@@ -187,8 +193,9 @@ html.tauri .app { opacity: var(--opacity, 1); }
 .card {
   width: 100%;
   padding: 8px 10px;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--note);
+  background: var(--surface);
   text-align: left;
 }
 
@@ -208,10 +215,9 @@ html.tauri .app { opacity: var(--opacity, 1); }
   text-overflow: ellipsis;
 }
 
-/* 카드 안 보조 글씨는 --muted 대신 본문색을 배경에 섞는다. 진한 메모색 위에서도 흐려지지 않게. */
 .card-date {
   flex: none;
-  color: color-mix(in srgb, var(--text) 70%, var(--note));
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -220,7 +226,7 @@ html.tauri .app { opacity: var(--opacity, 1); }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: color-mix(in srgb, var(--text) 70%, var(--note));
+  color: var(--muted);
   font-size: 12px;
   white-space: pre-wrap;
 }
@@ -247,13 +253,96 @@ html.tauri .app { opacity: var(--opacity, 1); }
 .statusbar .email { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .statusbar button:hover { color: var(--text); }
 
+/* PWA: 제목 아래 계정·상태 줄, 하단 도구줄, … 메뉴 */
+.pwa .titlebar { border-bottom: 0; }
+.pwa .title { font-size: 17px; }
+.pwa .statusbar {
+  padding: 0 12px 6px;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.bottombar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--line);
+}
+.bottombar .count { flex: 1; color: var(--muted); font-size: 12px; text-align: center; }
+.bottombar .search { flex: 1; min-width: 0; margin: 0; }
+.text-btn { padding: 0 6px; color: var(--accent); }
+
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.15);
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+}
+.menu-item {
+  padding: 8px;
+  border-radius: 6px;
+  text-align: left;
+}
+.menu-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.menu-item.danger { color: var(--danger); }
+
+/* 확인창 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.35);
+}
+.dialog {
+  width: 100%;
+  max-width: 280px;
+  padding: 18px 16px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.25);
+  text-align: center;
+}
+.dialog p { margin: 0 0 16px; font-size: 15px; font-weight: 600; }
+.dialog-actions { display: flex; gap: 8px; }
+.dialog-actions button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-weight: 600;
+}
+.dialog-actions .danger { background: var(--danger); color: #fff; }
+
 /* 편집기 */
 .editor {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--note);
+  background: var(--surface);
 }
 
 .editor-bar {
@@ -264,20 +353,6 @@ html.tauri .app { opacity: var(--opacity, 1); }
   padding: 4px 6px;
 }
 
-.swatches {
-  display: flex;
-  gap: 6px;
-  margin: 0 6px 0 auto;
-}
-
-.swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--c);
-  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
-}
-.swatch.on { outline: 2px solid var(--text); outline-offset: 1px; }
 
 textarea {
   flex: 1;
@@ -305,6 +380,7 @@ textarea {
 .login p { margin: 0; color: var(--muted); }
 
 .primary {
+  text-decoration: none;
   padding: 8px 18px;
   border-radius: 8px;
   background: var(--text);
@@ -325,5 +401,4 @@ textarea {
   .search,
   textarea { font-size: 16px; }
   .icon-btn { width: 36px; height: 36px; }
-  .swatch { width: 20px; height: 20px; }
 }

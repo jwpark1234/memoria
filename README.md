@@ -15,6 +15,7 @@
 ## 설치
 
 - **모바일(PWA)**: https://memoria-6104d.web.app
+  - 휴대폰·태블릿 전용입니다. PC 브라우저로 접속하면 데스크톱 앱 안내만 나옵니다.
   - iPhone: Safari로 접속 → 공유 → "홈 화면에 추가"
   - Android: Chrome으로 접속 → 메뉴 → "앱 설치"
   - Firebase Hosting(Google 서버)에서 제공되므로 개발 PC가 꺼져 있어도 접속됩니다.

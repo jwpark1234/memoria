@@ -12,22 +12,14 @@ import {
 import { useEffect, useState } from 'react'
 import { db } from './firebase'
 
-// 색상환을 고르게 나눠서 서로 헷갈리지 않게 한다 (순서 = 색상환 순서)
-export const NOTE_COLORS = ['yellow', 'orange', 'pink', 'purple', 'blue', 'green'] as const
-export type NoteColor = (typeof NOTE_COLORS)[number]
-
-// 없어진 색(예: 예전의 gray)이 저장된 메모는 기본색으로 보여준다.
-const toColor = (c: unknown): NoteColor => (NOTE_COLORS.includes(c as NoteColor) ? (c as NoteColor) : 'yellow')
-
 export interface Note {
   id: string
   text: string
-  color: NoteColor
   pinned: boolean
   updatedAt: number
 }
 
-type NotePatch = Partial<Pick<Note, 'text' | 'color' | 'pinned'>>
+type NotePatch = Partial<Pick<Note, 'text' | 'pinned'>>
 
 const notesCol = (uid: string) => collection(db, 'users', uid, 'notes')
 
@@ -50,7 +42,6 @@ export function useNotes(uid: string) {
           return {
             id: d.id,
             text: data.text ?? '',
-            color: toColor(data.color),
             pinned: !!data.pinned,
             updatedAt: (data.updatedAt as Timestamp | null)?.toMillis() ?? Date.now(),
           } satisfies Note
@@ -71,7 +62,6 @@ export function createNote(uid: string): string {
   const ref = doc(notesCol(uid))
   setDoc(ref, {
     text: '',
-    color: 'yellow',
     pinned: false,
     deleted: false,
     createdAt: serverTimestamp(),
