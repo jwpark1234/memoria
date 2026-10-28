@@ -8,7 +8,7 @@ import { NoteList } from './components/NoteList'
 import { SearchBox } from './components/SearchBox'
 import { StatusBar, type SyncStatus } from './components/StatusBar'
 import { TitleBar } from './components/TitleBar'
-import { signOut } from './lib/auth'
+import { isOwner, signOut } from './lib/auth'
 import { auth } from './lib/firebase'
 import { formatDate } from './lib/formatDate'
 import { createNote, useNotes } from './lib/notes'
@@ -27,7 +27,8 @@ const DESKTOP_DOWNLOAD = 'https://github.com/jwpark1234/memoria/releases/latest'
 export default function App() {
   // undefined = 아직 로그인 상태 확인 중
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  // 다른 계정은 로그인 직후 auth.ts가 내보낸다. 그 사이에 메모 화면이 뜨지 않게 로그아웃 상태로 본다.
+  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u && isOwner(u) ? u : null)), [])
 
   if (pcBrowser) return <PcBlocked />
   if (user === undefined) return <div className="app"><TitleBar /></div>
