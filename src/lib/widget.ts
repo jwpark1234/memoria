@@ -17,7 +17,7 @@ interface Size {
 
 export interface WidgetSettings {
   opacity: number // 0.3 ~ 1
-  fixed: boolean // true면 corner에 붙이고 드래그를 막는다
+  fixed: boolean // true면 corner에 붙인다. 끌어서 다른 모니터에 놓으면 그 모니터의 같은 귀퉁이에 붙는다.
   corner: Corner
   mini: boolean // 창을 원형 아이콘으로 줄인 상태
   size: Size // 미니모드에서 돌아올 때의 창 크기 (논리 px)
@@ -95,15 +95,16 @@ interface Rect {
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
-// 현재 모니터 작업 영역(작업표시줄/독 제외)의 모서리에 창을 붙인다.
+type Monitor = NonNullable<Awaited<ReturnType<typeof currentMonitor>>>
+
+// 창을 옮기거나 크기를 바꾸는 중, 사용자가 끄는 중에는 귀퉁이 맞추기를 쉰다.
+let resizing = false
+let dragging = false
+
+// 모니터 작업 영역(작업표시줄/독 제외)의 고정 귀퉁이에 size 크기의 창을 놓을 자리.
 // 그 자리에 다른 위젯(Claude Widget)이 있으면 겹치지 않게 위쪽 귀퉁이는 그 아래로, 아래쪽 귀퉁이는 그 위로 비켜 선다.
-async function snap() {
-  const win = mainWindow
-  if (!win || !settings.fixed) return
-  const monitor = await currentMonitor()
-  if (!monitor) return
+async function cornerPosition(monitor: Monitor, size: { width: number; height: number }) {
   const { position: area, size: areaSize } = monitor.workArea
-  const size = await win.outerSize()
   const margin = Math.round(EDGE_MARGIN * monitor.scaleFactor)
   const left = settings.corner.endsWith('left')
   const top = settings.corner.startsWith('top')
@@ -111,35 +112,90 @@ async function snap() {
   let y = top ? area.y + margin : area.y + areaSize.height - size.height - margin
 
   const other = await invoke<Rect | null>('neighbor_widget_rect').catch(() => null)
-  if (other && overlaps({ x, y, width: size.width, height: size.height }, other)) {
+  if (other && overlaps({ x, y, ...size }, other)) {
     const gap = Math.round(NEIGHBOR_GAP * monitor.scaleFactor)
     y = top ? other.y + other.height + gap : other.y - size.height - gap
     y = Math.min(Math.max(y, area.y), area.y + areaSize.height - size.height)
   }
+  return { x, y }
+}
 
+// 위치 고정이면 지금 창이 있는 모니터의 고정 귀퉁이로 옮긴다.
+async function snap() {
+  const win = mainWindow
+  if (!win || !settings.fixed || resizing || dragging) return
+  const monitor = await currentMonitor()
+  if (!monitor) return
+  const { x, y } = await cornerPosition(monitor, await win.outerSize())
   const now = await win.outerPosition()
   if (now.x !== x || now.y !== y) await win.setPosition(new PhysicalPosition(x, y))
 }
 
-// 창 크기를 바꾼다. 미니모드 버튼이 창 오른쪽 위에 있으므로 오른쪽 위 모서리를 기준으로 줄이고 늘리며,
-// 늘어난 창이 화면 밖으로 나가지 않게 작업 영역 안으로 당긴다. 위치 고정 중이면 snap이 자리를 잡는다.
-async function resizeFromTopRight(size: Size) {
+// 창 크기를 바꾼다. 위치 고정이면 그 귀퉁이에, 아니면 오른쪽 위 모서리를 기준으로(미니모드 버튼이 거기 있다) 줄이고 늘린다.
+// 기준 모니터는 바꾸기 전에 창이 있던 모니터다. 키운 뒤에 고르면 커진 창이 걸친 옆 모니터가 잡혀 그쪽으로 넘어간다.
+async function resizeTo(size: Size) {
   const win = mainWindow
   if (!win) return
-  const before = await win.outerPosition()
-  const beforeSize = await win.outerSize()
-  await win.setSize(new LogicalSize(size.width, size.height))
-  if (settings.fixed) return
-  const after = await win.outerSize()
-  let x = before.x + beforeSize.width - after.width
-  let y = before.y
-  const monitor = await currentMonitor()
-  if (monitor) {
-    const { position: area, size: areaSize } = monitor.workArea
-    x = Math.min(Math.max(x, area.x), area.x + areaSize.width - after.width)
-    y = Math.min(Math.max(y, area.y), area.y + areaSize.height - after.height)
+  resizing = true
+  try {
+    const monitor = await currentMonitor()
+    const before = await win.outerPosition()
+    const beforeSize = await win.outerSize()
+    const scale = monitor?.scaleFactor ?? (await win.scaleFactor())
+    const after = { width: Math.round(size.width * scale), height: Math.round(size.height * scale) }
+
+    let pos = { x: before.x + beforeSize.width - after.width, y: before.y }
+    if (monitor && settings.fixed) pos = await cornerPosition(monitor, after)
+    else if (monitor) {
+      const { position: area, size: areaSize } = monitor.workArea
+      pos.x = Math.min(Math.max(pos.x, area.x), area.x + areaSize.width - after.width)
+      pos.y = Math.min(Math.max(pos.y, area.y), area.y + areaSize.height - after.height)
+    }
+
+    // 키울 때는 자리부터 옮기고, 줄일 때는 크기부터 줄여야 중간에 옆 모니터로 걸치지 않는다.
+    const grow = after.width > beforeSize.width || after.height > beforeSize.height
+    if (grow) await win.setPosition(new PhysicalPosition(pos.x, pos.y))
+    await win.setSize(new LogicalSize(size.width, size.height))
+    if (!grow) await win.setPosition(new PhysicalPosition(pos.x, pos.y))
+  } finally {
+    resizing = false
   }
-  await win.setPosition(new PhysicalPosition(x, y))
+  snap()
+}
+
+// 버튼·입력칸이 아닌 곳은 어디를 잡아도 창을 끌 수 있다. 메모 카드는 3px 넘게 움직일 때만 끌기라 클릭과 겹치지 않는다.
+const NO_DRAG = 'input, textarea, select, [contenteditable], button:not(.card), .segment, .corners, .menu, .overlay'
+const DRAG_THRESHOLD = 3 // px
+const DRAG_CHECK = 150 // 끌기가 끝났는지(버튼을 놓았는지) 확인하는 주기 (ms)
+
+function enableDrag(win: NonNullable<typeof mainWindow>) {
+  let start: { x: number; y: number } | null = null
+
+  // 끈 뒤 버튼을 놓으면, 위치 고정일 때 놓은 모니터의 고정 귀퉁이로 붙는다.
+  const finish = () => {
+    dragging = false
+    snap()
+  }
+  const watch = async () => {
+    if (!dragging) return
+    if (await invoke<boolean>('mouse_left_down').catch(() => false)) window.setTimeout(watch, DRAG_CHECK)
+    else finish()
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || (e.target as Element).closest(NO_DRAG)) return
+    start = { x: e.screenX, y: e.screenY }
+  })
+  document.addEventListener('mousemove', (e) => {
+    // OS의 창 끌기가 끝나면 웹뷰는 mouseup을 못 받는다. 버튼이 떼어진 채 움직이면 끝난 것이다.
+    if (dragging && e.buttons === 0) return finish()
+    if (!start || Math.abs(e.screenX - start.x) + Math.abs(e.screenY - start.y) <= DRAG_THRESHOLD) return
+    start = null
+    dragging = true
+    win.startDragging()
+    window.setTimeout(watch, DRAG_CHECK)
+  })
+  document.addEventListener('mouseup', () => (start = null))
 }
 
 // remember: 지금 창 크기를 미니모드에서 돌아올 크기로 기억할지. 앱 시작 직후에는 설정 파일의 기본 크기라 기억하지 않는다.
@@ -164,10 +220,10 @@ async function applyMini(mini: boolean, remember = true) {
     await win.setResizable(false)
     await win.setShadow(false) // Windows에서 테두리 없는 창의 사각 그림자·테두리가 원 둘레에 보이지 않게
     await win.setMinSize(null)
-    await resizeFromTopRight({ width: MINI_SIZE, height: MINI_SIZE })
+    await resizeTo({ width: MINI_SIZE, height: MINI_SIZE })
   } else {
     await win.setMinSize(new LogicalSize(MIN_SIZE.width, MIN_SIZE.height))
-    await resizeFromTopRight(settings.size)
+    await resizeTo(settings.size)
     await win.setShadow(true)
     await win.setResizable(true)
     setNoteWindowsVisible(true)
@@ -180,6 +236,7 @@ export function initWidget() {
   if (!win) return
   document.documentElement.classList.add('tauri')
   if (!mainWindow) return
+  enableDrag(mainWindow)
   if (settings.mini) applyMini(true, false)
   restoreNoteWindows(settings.mini)
   snap()

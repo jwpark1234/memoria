@@ -1,3 +1,4 @@
+mod mouse;
 mod neighbor;
 mod oauth;
 
@@ -76,7 +77,7 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .invoke_handler(tauri::generate_handler![oauth::google_sign_in, neighbor::neighbor_widget_rect])
+        .invoke_handler(tauri::generate_handler![oauth::google_sign_in, neighbor::neighbor_widget_rect, mouse::mouse_left_down])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 

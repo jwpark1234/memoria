@@ -26,9 +26,9 @@ base64 = "0.22"
 rand = "0.9"
 url = "2"
 
-# 같은 귀퉁이에 있는 다른 위젯(Claude Widget) 창의 위치를 읽는다 (neighbor.rs)
+# 같은 귀퉁이에 있는 다른 위젯(Claude Widget) 창의 위치(neighbor.rs)와 마우스 버튼 상태(mouse.rs)를 읽는다
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Dwm", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
 
 # 바이너리 크기 최소화
 [profile.release]

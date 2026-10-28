@@ -1,21 +1,18 @@
 import { useState, type ReactNode } from 'react'
 import { applyUpdate, useUpdate } from '../lib/update'
-import { mainWindow, setWidget, useWidget } from '../lib/widget'
+import { mainWindow, setWidget } from '../lib/widget'
 import { Icon } from './Icon'
 import { WidgetPanel } from './WidgetPanel'
 
 export function TitleBar({ children }: { children?: ReactNode }) {
   const win = mainWindow
-  const { fixed } = useWidget()
   const update = useUpdate()
   const [panel, setPanel] = useState(false)
-  // 위치 고정 중에는 끌어서 옮길 수 없다
-  const drag = win && !fixed ? { 'data-tauri-drag-region': true } : {}
-
   return (
     <>
-      <header className="titlebar" {...drag}>
-        <span className="title" {...drag}>
+      {/* 창 끌기는 lib/widget.ts가 창 전체에서 처리한다 */}
+      <header className="titlebar">
+        <span className="title">
           Memoria
         </span>
         {update.available && (
@@ -28,7 +25,7 @@ export function TitleBar({ children }: { children?: ReactNode }) {
             <Icon name="update" />
           </button>
         )}
-        <span className="grow" {...drag} />
+        <span className="grow" />
         {children}
         {win && (
           <>

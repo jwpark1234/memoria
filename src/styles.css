@@ -71,6 +71,10 @@ button {
 /* 데스크톱 위젯: 창 자체는 투명하고, 앱 전체의 불투명도를 설정에서 조절한다 */
 html.tauri body { background: transparent; }
 html.tauri .app { opacity: var(--opacity, 1); }
+/* 메인 위젯은 어디를 잡아도 끌 수 있어서 글자가 선택되지 않게 한다 (메모 창은 편집기라 그대로) */
+html.tauri .app:not(.note-window) { user-select: none; -webkit-user-select: none; }
+html.tauri textarea,
+html.tauri input { user-select: text; -webkit-user-select: text; }
 
 /* 타이틀바: Tauri에서는 창 드래그 영역, PWA에서는 헤더 */
 .titlebar {
@@ -132,7 +136,6 @@ html.mini .app { display: none; }
 }
 .mini-bubble svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: #1c1c1e; }
 .mini-circle { fill: #f5c518; stroke: rgb(0 0 0 / 0.1); stroke-width: 3; }
-.mini-drag { position: absolute; inset: 0; border-radius: 50%; }
 .mini-expand {
   position: absolute;
   top: 2px;
