@@ -18,7 +18,8 @@
   - iPhone: Safari로 접속 → 공유 → "홈 화면에 추가"
   - Android: Chrome으로 접속 → 메뉴 → "앱 설치"
   - Firebase Hosting(Google 서버)에서 제공되므로 개발 PC가 꺼져 있어도 접속됩니다.
-- **데스크톱**: GitHub Releases에서 OS에 맞는 설치 파일을 받습니다.
+- **데스크톱**: [GitHub Releases](https://github.com/jwpark1234/memoria/releases/latest)에서 OS에 맞는 설치 파일을 받습니다.
+  - Windows: `Memoria_x.y.z_x64-setup.exe` / macOS: `Memoria_x.y.z_universal.dmg` / Ubuntu: `.deb` 또는 `.AppImage`
 
 ## 개발 환경
 
