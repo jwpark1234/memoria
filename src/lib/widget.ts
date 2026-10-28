@@ -199,10 +199,23 @@ function enableDrag(win: NonNullable<typeof mainWindow>) {
 }
 
 // remember: 지금 창 크기를 미니모드에서 돌아올 크기로 기억할지. 앱 시작 직후에는 설정 파일의 기본 크기라 기억하지 않는다.
+// 창 크기가 바뀌는 동안에는 화면을 가린다. 안 그러면 큰 창에 원형 아이콘이 크게 그려졌다가(또는 메모 화면이 60px에 구겨졌다가) 바뀐다.
 async function applyMini(mini: boolean, remember = true) {
   const win = mainWindow
   if (!win) return
-  document.documentElement.classList.toggle('mini', mini)
+  const root = document.documentElement
+  root.classList.add('switching')
+  try {
+    await resizeForMini(win, mini, remember)
+  } finally {
+    root.classList.toggle('mini', mini)
+    // 새 크기로 한 번 그려진 뒤에 보여준다
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    root.classList.remove('switching')
+  }
+}
+
+async function resizeForMini(win: NonNullable<typeof mainWindow>, mini: boolean, remember: boolean) {
   if (mini) {
     setNoteWindowsVisible(false)
     if (remember) {

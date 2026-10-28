@@ -129,9 +129,11 @@ html.tauri input { user-select: text; -webkit-user-select: text; }
 
 /* 미니모드: 메인 창이 원형 아이콘 하나가 된다 (MiniBubble). 메모 화면은 그대로 둔 채 가리기만 한다. */
 html.mini .app { display: none; }
+html.switching #root { visibility: hidden; }
 .mini-bubble {
   position: relative;
-  height: 100%;
+  width: 60px; /* lib/widget.ts의 MINI_SIZE */
+  height: 60px;
   opacity: var(--opacity, 1);
 }
 .mini-bubble svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: #1c1c1e; }
