@@ -12,9 +12,13 @@ interface Props {
   onBack: () => void
   // 저장 대기 중(디바운스)인 입력이 있는지. 아직 서버로 가지 않았으니 "동기화됨"으로 보이면 안 된다.
   onTyping: (typing: boolean) => void
+  // PC: 이 메모를 따로 창으로 띄운다
+  onPopOut?: () => void
+  // PC 메모 창: 편집 바가 창의 제목줄이 된다 (끌어서 옮기기, 닫기 버튼)
+  standalone?: boolean
 }
 
-export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
+export function NoteEditor({ uid, note, onBack, onTyping, onPopOut, standalone }: Props) {
   const [draft, setDraft] = useState(note.text)
   const [confirming, setConfirming] = useState(false)
   const latest = useRef(note.text)
@@ -63,6 +67,11 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
     onBack()
   }
 
+  const popOut = () => {
+    flush()
+    onPopOut?.()
+  }
+
   // 빈 메모는 묻지 않고 지운다
   const askRemove = () => (latest.current.trim() ? setConfirming(true) : remove())
 
@@ -74,14 +83,28 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
     onBack()
   }
 
+  const drag = standalone ? { 'data-tauri-drag-region': true } : {}
+  const title = draft.trim().split('\n')[0] || '새 메모'
+
   return (
     <div className="editor">
-      <div className="editor-bar">
-        <button className="icon-btn" onClick={back} title="목록으로 (Esc)">
-          <Icon name="back" />
-        </button>
+      <div className="editor-bar" {...drag}>
+        {standalone ? (
+          <span className="note-title" {...drag}>
+            {title}
+          </span>
+        ) : (
+          <button className="icon-btn" onClick={back} title="목록으로 (Esc)">
+            <Icon name="back" />
+          </button>
+        )}
+        {onPopOut && (
+          <button className="icon-btn push" onClick={popOut} title="따로 띄우기">
+            <Icon name="popout" />
+          </button>
+        )}
         <button
-          className={`icon-btn push${note.pinned ? ' active' : ''}`}
+          className={`icon-btn${onPopOut || standalone ? '' : ' push'}${note.pinned ? ' active' : ''}`}
           onClick={() => updateNote(uid, note.id, { pinned: !note.pinned })}
           title="목록 상단에 고정"
         >
@@ -90,6 +113,11 @@ export function NoteEditor({ uid, note, onBack, onTyping }: Props) {
         <button className="icon-btn" onClick={askRemove} title="삭제">
           <Icon name="trash" />
         </button>
+        {standalone && (
+          <button className="icon-btn" onClick={back} title="닫기 (Esc)">
+            <Icon name="close" />
+          </button>
+        )}
       </div>
       <textarea
         autoFocus

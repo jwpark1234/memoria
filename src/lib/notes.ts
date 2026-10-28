@@ -30,6 +30,7 @@ export function useNotes(uid: string) {
   const [notes, setNotes] = useState<Note[]>([])
   const [loaded, setLoaded] = useState(false)
   const [pending, setPending] = useState(false)
+  const [fromServer, setFromServer] = useState(false)
 
   useEffect(() => {
     const q = query(notesCol(uid), where('deleted', '==', false))
@@ -50,12 +51,14 @@ export function useNotes(uid: string) {
         setNotes(list)
         setLoaded(true)
         setPending(snap.metadata.hasPendingWrites)
+        setFromServer(!snap.metadata.fromCache)
       },
       report,
     )
   }, [uid])
 
-  return { notes, loaded, pending }
+  // fromServer: 서버와 맞춰 본 목록인지. 캐시만 본 상태에서는 "없는 메모"라고 단정하지 않는다.
+  return { notes, loaded, pending, fromServer }
 }
 
 export function createNote(uid: string): string {

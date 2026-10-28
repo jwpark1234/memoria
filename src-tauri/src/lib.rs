@@ -1,3 +1,4 @@
+mod neighbor;
 mod oauth;
 
 use tauri::{
@@ -64,14 +65,18 @@ pub fn run() {
                 .build(app)?;
             Ok(())
         })
-        // 창을 닫으면 종료하지 않고 트레이로 숨긴다. 종료는 트레이 메뉴에서.
+        // 메인 창을 닫으면(Alt+F4 등) 종료하지 않고 트레이로 숨긴다. 종료는 트레이 메뉴에서.
+        // 따로 띄운 메모 창(note-*)은 그냥 닫힌다.
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() != "main" {
+                    return;
+                }
                 api.prevent_close();
                 let _ = window.hide();
             }
         })
-        .invoke_handler(tauri::generate_handler![oauth::google_sign_in])
+        .invoke_handler(tauri::generate_handler![oauth::google_sign_in, neighbor::neighbor_widget_rect])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 

@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { signOut } from '../lib/auth'
-import { setTheme, useTheme, type Theme } from '../lib/theme'
+import { setTheme, THEME_LABEL, THEMES, useTheme } from '../lib/theme'
 import { Icon } from './Icon'
-
-const THEME_LABEL: Record<Theme, string> = { system: '자동', light: '라이트', dark: '다크' }
 
 // PWA 우상단 … 메뉴: 화면 테마, 로그아웃, 버전
 export function MoreMenu() {
@@ -29,7 +27,7 @@ export function MoreMenu() {
           <div className="menu-row">
             <span>화면</span>
             <div className="segment">
-              {(Object.keys(THEME_LABEL) as Theme[]).map((t) => (
+              {THEMES.map((t) => (
                 <button key={t} className={t === theme ? 'on' : ''} onClick={() => setTheme(t)}>
                   {THEME_LABEL[t]}
                 </button>

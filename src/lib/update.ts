@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { inTauri } from './firebase'
+import { noteWindowId } from './noteWindows'
 
 // 새 버전 알림. 데스크톱은 GitHub Releases의 latest.json(Tauri updater)을, PWA는 새 서비스워커를 확인한다.
 // 찾으면 제목 옆에 업데이트 버튼이 나타나고, 누르면 설치한 뒤 다시 시작한다.
@@ -70,9 +71,9 @@ async function initPwa() {
   })
 }
 
-/** 앱 시작 시 한 번 호출. 개발 중에는 확인하지 않는다. */
+/** 앱 시작 시 한 번 호출. 개발 중이나 PC 메모 창(업데이트 버튼이 없다)에서는 확인하지 않는다. */
 export function initUpdate() {
-  if (import.meta.env.DEV) return
+  if (import.meta.env.DEV || noteWindowId) return
   if (inTauri) {
     const recheck = () => checkDesktop().catch((e) => console.warn('[update]', e)) // 오프라인이면 다음 기회에
     recheck()

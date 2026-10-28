@@ -1,3 +1,4 @@
+import { setTheme, THEME_LABEL, THEMES, useTheme } from '../lib/theme'
 import { CORNERS, MIN_OPACITY, setWidget, useWidget, type Corner } from '../lib/widget'
 
 const CORNER_LABEL: Record<Corner, string> = {
@@ -7,9 +8,10 @@ const CORNER_LABEL: Record<Corner, string> = {
   'bottom-right': '우하단',
 }
 
-/** 타이틀바 아래로 펼쳐지는 데스크톱 위젯 설정 */
+/** 타이틀바 톱니바퀴 버튼으로 펼치는 데스크톱 설정 */
 export function WidgetPanel() {
   const w = useWidget()
+  const theme = useTheme()
 
   return (
     <div className="widget-panel">
@@ -25,6 +27,17 @@ export function WidgetPanel() {
         />
         <span className="value">{Math.round(w.opacity * 100)}%</span>
       </label>
+
+      <div className="row">
+        <span className="label">화면</span>
+        <div className="segment">
+          {THEMES.map((t) => (
+            <button key={t} className={t === theme ? 'on' : ''} onClick={() => setTheme(t)}>
+              {THEME_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="row">
         <span className="label">위치</span>

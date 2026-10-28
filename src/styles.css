@@ -123,6 +123,47 @@ html.tauri .app { opacity: var(--opacity, 1); }
 .push { margin-left: auto; }
 .grow { flex: 1; align-self: stretch; }
 
+/* 미니모드: 메인 창이 원형 아이콘 하나가 된다 (MiniBubble). 메모 화면은 그대로 둔 채 가리기만 한다. */
+html.mini .app { display: none; }
+.mini-bubble {
+  position: relative;
+  height: 100%;
+  opacity: var(--opacity, 1);
+}
+.mini-bubble svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: #1c1c1e; }
+.mini-circle { fill: #f5c518; stroke: rgb(0 0 0 / 0.1); stroke-width: 3; }
+.mini-drag { position: absolute; inset: 0; border-radius: 50%; }
+.mini-expand {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text);
+}
+.mini-expand:hover { background: var(--accent); color: #1c1c1e; }
+.mini-bubble:hover .mini-expand,
+.mini-expand:focus-visible { display: grid; }
+
+/* PC 메모 창: 편집 바가 제목줄이다 */
+.note-window .editor-bar { border-bottom: 1px solid var(--line); }
+.note-title {
+  flex: 1;
+  min-width: 0;
+  padding-left: 6px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
 /* 새 버전 알림 (제목 옆) */
 .icon-btn.update { color: var(--accent); }
 .icon-btn.update.busy { animation: blink 1s ease-in-out infinite; cursor: default; }

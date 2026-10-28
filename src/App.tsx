@@ -5,12 +5,14 @@ import { Login } from './components/Login'
 import { MoreMenu } from './components/MoreMenu'
 import { NoteEditor } from './components/NoteEditor'
 import { NoteList } from './components/NoteList'
+import { NoteWindow } from './components/NoteWindow'
 import { SearchBox } from './components/SearchBox'
 import { StatusBar, type SyncStatus } from './components/StatusBar'
 import { TitleBar } from './components/TitleBar'
 import { isOwner, signOut } from './lib/auth'
 import { auth } from './lib/firebase'
 import { formatDate } from './lib/formatDate'
+import { noteWindowId, openNoteWindow } from './lib/noteWindows'
 import { createNote, useNotes } from './lib/notes'
 import { useOnline } from './lib/useOnline'
 import { win } from './lib/widget'
@@ -25,6 +27,11 @@ const pcBrowser = pwa && !mobile && !import.meta.env.DEV
 const DESKTOP_DOWNLOAD = 'https://github.com/jwpark1234/memoria/releases/latest'
 
 export default function App() {
+  if (noteWindowId) return <NoteWindow />
+  return <Main />
+}
+
+function Main() {
   // undefined = 아직 로그인 상태 확인 중
   const [user, setUser] = useState<User | null | undefined>(undefined)
   // 다른 계정은 로그인 직후 auth.ts가 내보낸다. 그 사이에 메모 화면이 뜨지 않게 로그아웃 상태로 본다.
@@ -99,7 +106,21 @@ function Notes({ user }: { user: User }) {
     <SearchBox value={query} onChange={setQuery} onClose={closeSearch} placeholder={pwa ? '검색' : undefined} />
   )
   const body = current ? (
-    <NoteEditor key={current.id} uid={user.uid} note={current} onBack={() => setOpenId(null)} onTyping={setTyping} />
+    <NoteEditor
+      key={current.id}
+      uid={user.uid}
+      note={current}
+      onBack={() => setOpenId(null)}
+      onTyping={setTyping}
+      onPopOut={
+        pwa
+          ? undefined
+          : () => {
+              openNoteWindow(current.id)
+              setOpenId(null)
+            }
+      }
+    />
   ) : (
     <NoteList notes={notes} loaded={loaded} query={query} onOpen={setOpenId} />
   )

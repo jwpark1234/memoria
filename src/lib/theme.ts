@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react'
 
 export const THEMES = ['system', 'light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]
+export const THEME_LABEL: Record<Theme, string> = { system: '자동', light: '라이트', dark: '다크' }
 
 const KEY = 'memoria.theme'
 const BG = { light: '#fbfaf7', dark: '#1c1c1e' }
@@ -19,6 +20,14 @@ function load(): Theme {
 
 let theme = load()
 const listeners = new Set<() => void>()
+
+// 다른 창(PC 메모 창, 브라우저 탭)에서 바꾼 테마를 바로 따라간다.
+window.addEventListener('storage', (e) => {
+  if (e.key !== KEY) return
+  theme = load()
+  applyTheme()
+  listeners.forEach((l) => l())
+})
 
 export function useTheme() {
   return useSyncExternalStore(
