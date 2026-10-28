@@ -1,10 +1,18 @@
-import { useState } from 'react'
-import { signIn } from '../lib/auth'
+import { useEffect, useState } from 'react'
+import { checkRedirectResult, signIn } from '../lib/auth'
 import { TitleBar } from './TitleBar'
+
+// Tauri invoke는 문자열로, Firebase는 code가 있는 Error로 reject한다
+const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 export function Login() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // 구글에서 돌아왔는데 로그인 화면이면 실패한 것이다. 조용히 첫 화면으로 돌아가지 않게 이유를 보여준다.
+  useEffect(() => {
+    checkRedirectResult().catch((e) => setError(message(e)))
+  }, [])
 
   const onClick = async () => {
     setBusy(true)
@@ -12,8 +20,7 @@ export function Login() {
     try {
       await signIn()
     } catch (e) {
-      // Tauri invoke는 문자열로 reject한다
-      setError(e instanceof Error ? e.message : String(e))
+      setError(message(e))
     } finally {
       setBusy(false)
     }

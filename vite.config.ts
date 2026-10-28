@@ -18,6 +18,8 @@ export default defineConfig({
     !isTauri &&
       VitePWA({
         registerType: 'autoUpdate',
+        // 구글 로그인에서 돌아오는 Firebase 처리 페이지(/__/auth/handler)를 서비스워커가 index.html로 바꿔치지 않게 한다.
+        workbox: { navigateFallbackDenylist: [/^\/__\//] },
         includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
         manifest: {
           name: 'Memoria',

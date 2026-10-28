@@ -1,22 +1,18 @@
 import { invoke } from '@tauri-apps/api/core'
 import {
+  getRedirectResult,
   GoogleAuthProvider,
   signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
   signOut as fbSignOut,
 } from 'firebase/auth'
-import { auth, inTauri } from './firebase'
+import { auth, inTauri, onHosting } from './firebase'
 
 interface GoogleTokens {
   idToken: string
   accessToken: string
 }
-
-// 홈 화면에 추가된 iOS PWA는 팝업이 불안정해서 리다이렉트를 쓴다.
-const isIOSStandalone = () =>
-  /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-  (navigator as Navigator & { standalone?: boolean }).standalone === true
 
 export async function signIn() {
   if (inTauri) {
@@ -31,8 +27,15 @@ export async function signIn() {
 
   const provider = new GoogleAuthProvider()
   provider.setCustomParameters({ prompt: 'select_account' })
-  if (isIOSStandalone()) await signInWithRedirect(auth, provider)
+  // 배포된 PWA는 페이지째 구글로 갔다가 같은 도메인으로 돌아온다. 팝업은 모바일(특히 아이폰)에서 막히거나
+  // 창 사이 연결이 끊긴다. 개발 서버(localhost)는 처리 페이지가 다른 도메인이라 팝업을 쓴다.
+  if (onHosting) await signInWithRedirect(auth, provider)
   else await signInWithPopup(auth, provider)
+}
+
+/** 구글에서 돌아왔을 때 로그인이 실패했으면 그 오류를 던진다 */
+export async function checkRedirectResult() {
+  if (onHosting) await getRedirectResult(auth)
 }
 
 export const signOut = () => fbSignOut(auth)
