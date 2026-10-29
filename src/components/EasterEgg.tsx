@@ -1,30 +1,19 @@
 import { useEffect, useRef } from 'react'
 
-// 이스터에그: 제목 "Memoria"를 빠르게 다섯 번 누르면 "Come As You Are"의 "memoria~" 구간이 흐른다.
-// 음원은 public/easter/memoria.mp3. 재생이 안 되면 화면 효과만 나온다.
+// 이스터에그: 제목 "Memoria"를 빠르게 다섯 번 누르면 음표가 떠오르고 8비트 곡이 흐른다.
+// 곡은 lib/chiptune.ts가 그 자리에서 합성한다 (음원 파일 없음). 휴대폰은 누른 순간에만 소리를 켤 수 있어서
+// 곡은 누름을 받은 TitleBar가 틀고, 여기서는 곡 길이만큼 화면 효과를 보여준다.
 
-const CLIP = `${import.meta.env.BASE_URL}easter/memoria.mp3`
-const SHOW_MS = 6000 // 음원이 없을 때 화면 효과 길이
 const NOTES = ['♪', '♫', '♩', '♬']
 
-export function EasterEgg({ onEnd }: { onEnd: () => void }) {
+export function EasterEgg({ duration, onEnd }: { duration: number; onEnd: () => void }) {
   const end = useRef(onEnd)
   end.current = onEnd
 
   useEffect(() => {
-    const audio = new Audio(CLIP)
-    const timer = window.setTimeout(() => end.current(), SHOW_MS)
-    audio.onended = () => end.current()
-    audio
-      .play()
-      // 재생되면 음원이 끝날 때까지 보여준다
-      .then(() => window.clearTimeout(timer))
-      .catch(() => {})
-    return () => {
-      window.clearTimeout(timer)
-      audio.pause()
-    }
-  }, [])
+    const timer = window.setTimeout(() => end.current(), duration * 1000)
+    return () => window.clearTimeout(timer)
+  }, [duration])
 
   return (
     <div className="easter" onClick={() => end.current()} aria-hidden>

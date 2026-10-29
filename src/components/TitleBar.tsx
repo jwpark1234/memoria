@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { playChiptune, type Song } from '../lib/chiptune'
 import { applyUpdate, useUpdate } from '../lib/update'
 import { mainWindow, setWidget } from '../lib/widget'
 import { EasterEgg } from './EasterEgg'
@@ -9,7 +10,7 @@ export function TitleBar({ children }: { children?: ReactNode }) {
   const win = mainWindow
   const update = useUpdate()
   const [panel, setPanel] = useState(false)
-  const [egg, setEgg] = useState(false)
+  const [egg, setEgg] = useState<Song | null>(null)
   // 제목을 빠르게 다섯 번 누르면 이스터에그 (EasterEgg.tsx)
   const taps = useRef<number[]>([])
   const tapTitle = () => {
@@ -17,7 +18,9 @@ export function TitleBar({ children }: { children?: ReactNode }) {
     taps.current = [...taps.current.filter((t) => now - t < 2000), now]
     if (taps.current.length < 5) return
     taps.current = []
-    setEgg(true)
+    egg?.stop()
+    // 소리는 누름 처리 안에서 바로 켜야 휴대폰에서도 난다
+    setEgg(playChiptune() ?? { duration: 6, stop: () => {} })
   }
   return (
     <>
@@ -51,7 +54,15 @@ export function TitleBar({ children }: { children?: ReactNode }) {
         )}
       </header>
       {panel && <WidgetPanel />}
-      {egg && <EasterEgg onEnd={() => setEgg(false)} />}
+      {egg && (
+        <EasterEgg
+          duration={egg.duration}
+          onEnd={() => {
+            egg.stop()
+            setEgg(null)
+          }}
+        />
+      )}
     </>
   )
 }
