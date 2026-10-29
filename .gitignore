@@ -9,3 +9,10 @@ src-tauri/target
 src-tauri/gen
 
 .firebase
+
+# 푸시 Worker 로컬 비밀값·캐시 (push/)
+.dev.vars
+.wrangler
+
+# 이스터에그 음원은 저작권 때문에 공개 저장소에 올리지 않는다 (로컬 빌드·웹 배포에만 들어간다)
+public/easter/*.mp3

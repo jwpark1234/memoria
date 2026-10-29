@@ -1,0 +1,16 @@
+# 일정 푸시 알림 Worker (src/index.ts). 배포: npm run deploy
+# 서비스 계정 키는 저장소에 두지 않고 비밀값으로 넣는다: npx wrangler secret put FIREBASE_SA < 키.json
+name = "memoria-push"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+# 1분마다 실행만 한다. 외부에서 부를 주소는 필요 없다.
+workers_dev = false
+
+[vars]
+OWNER_UID = "J7jEHxqol0P0FDpXOmYOD4kCKrn1" # src/lib/auth.ts의 OWNER_UID
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true

@@ -1,7 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
-import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window'
+import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition, PhysicalSize } from '@tauri-apps/api/window'
 import { useSyncExternalStore } from 'react'
 import { inTauri } from './firebase'
+import { lockNow } from './lock'
 import { noteWindowId, restoreNoteWindows, setNoteWindowsVisible } from './noteWindows'
 
 // 데스크톱 위젯 창 설정 (투명도, 위치 고정, 미니모드). 기기별 설정이라 서버가 아닌 localStorage에 둔다.
@@ -141,7 +142,9 @@ async function resizeTo(size: Size) {
     const monitor = await currentMonitor()
     const before = await win.outerPosition()
     const beforeSize = await win.outerSize()
-    const scale = monitor?.scaleFactor ?? (await win.scaleFactor())
+    // 크기는 웹뷰가 실제로 그리는 배율로 정한다. 화면 배율이 다른 PC에서 창의 배율(scaleFactor)이 이와 어긋나
+    // 60px 미니모드 창이 내용보다 작게 잡혀 원형 아이콘이 잘린 적이 있다.
+    const scale = window.devicePixelRatio || monitor?.scaleFactor || (await win.scaleFactor())
     const after = { width: Math.round(size.width * scale), height: Math.round(size.height * scale) }
 
     let pos = { x: before.x + beforeSize.width - after.width, y: before.y }
@@ -155,7 +158,7 @@ async function resizeTo(size: Size) {
     // 키울 때는 자리부터 옮기고, 줄일 때는 크기부터 줄여야 중간에 옆 모니터로 걸치지 않는다.
     const grow = after.width > beforeSize.width || after.height > beforeSize.height
     if (grow) await win.setPosition(new PhysicalPosition(pos.x, pos.y))
-    await win.setSize(new LogicalSize(size.width, size.height))
+    await win.setSize(new PhysicalSize(after.width, after.height))
     if (!grow) await win.setPosition(new PhysicalPosition(pos.x, pos.y))
   } finally {
     resizing = false
@@ -163,7 +166,8 @@ async function resizeTo(size: Size) {
   snap()
 }
 
-// 버튼·입력칸이 아닌 곳은 어디를 잡아도 창을 끌 수 있다. 메모 카드는 3px 넘게 움직일 때만 끌기라 클릭과 겹치지 않는다.
+// 버튼·입력칸이 아닌 곳은 어디를 잡아도 창을 끌 수 있다. 3px 넘게 움직일 때만 끌기라
+// 메모 카드나 메모 제목(누르면 입력칸)의 클릭과 겹치지 않는다. 메모 창도 같은 방식으로 끈다.
 const NO_DRAG = 'input, textarea, select, [contenteditable], button:not(.card), .segment, .corners, .menu, .overlay'
 const DRAG_THRESHOLD = 3 // px
 const DRAG_CHECK = 150 // 끌기가 끝났는지(버튼을 놓았는지) 확인하는 주기 (ms)
@@ -217,6 +221,7 @@ async function applyMini(mini: boolean, remember = true) {
 
 async function resizeForMini(win: NonNullable<typeof mainWindow>, mini: boolean, remember: boolean) {
   if (mini) {
+    lockNow() // 미니모드는 위젯을 접어 둔 것이라 연 잠금 메모도 잠근다
     setNoteWindowsVisible(false)
     if (remember) {
       const scale = await win.scaleFactor()
@@ -248,8 +253,8 @@ export function initWidget() {
   applyOpacity()
   if (!win) return
   document.documentElement.classList.add('tauri')
+  enableDrag(win)
   if (!mainWindow) return
-  enableDrag(mainWindow)
   if (settings.mini) applyMini(true, false)
   restoreNoteWindows(settings.mini)
   snap()

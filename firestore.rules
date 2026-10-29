@@ -11,7 +11,34 @@ service cloud.firestore {
       allow read: if isOwner(uid);
       allow write: if isOwner(uid)
         && request.resource.data.text is string
-        && request.resource.data.text.size() < 200000;
+        && request.resource.data.text.size() < 200000
+        && request.resource.data.get('title', '') is string
+        && request.resource.data.get('title', '').size() < 1000
+        // 잠금 메모의 암호문 (src/lib/lock.ts). 원문 20만 자의 base64 정도까지
+        && request.resource.data.get('cipher', '') is string
+        && request.resource.data.get('cipher', '').size() < 1100000;
+    }
+
+    // 잠금 암호로 감싼 데이터 키 (src/lib/lock.ts). 암호 없이는 풀 수 없다.
+    match /users/{uid}/meta/{docId} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // 푸시를 받을 휴대폰 (src/lib/push.ts). 푸시 Worker(push/)는 서비스 계정이라 규칙과 무관하다.
+    match /users/{uid}/devices/{deviceId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.token is string
+        && request.resource.data.token.size() < 4096;
+    }
+
+    // 일정 (src/lib/schedules.ts)
+    match /users/{uid}/schedules/{scheduleId} {
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid)
+        && request.resource.data.title is string
+        && request.resource.data.title.size() < 1000
+        && request.resource.data.at is timestamp;
     }
   }
 }

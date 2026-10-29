@@ -24,7 +24,8 @@ export default defineConfig({
       // 새 버전을 바로 적용하지 않고 기다렸다가, 사용자가 업데이트 버튼을 누르면 적용한다 (lib/update.ts).
       registerType: 'prompt',
       // 구글 로그인에서 돌아오는 Firebase 처리 페이지(/__/auth/handler)를 서비스워커가 index.html로 바꿔치지 않게 한다.
-      workbox: { navigateFallbackDenylist: [/^\/__\//] },
+      // sw-notify.js: 일정 알림을 누르면 앱을 연다 (lib/alarms.ts)
+      workbox: { navigateFallbackDenylist: [/^\/__\//], importScripts: ['sw-notify.js'] },
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'icon.svg'],
       manifest: {
         name: 'Memoria',

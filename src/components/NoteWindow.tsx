@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react'
 import { isOwner } from '../lib/auth'
 import { auth } from '../lib/firebase'
 import { closeNoteWindow, noteWindowId, trackNoteWindow } from '../lib/noteWindows'
+import { useDecrypted } from '../lib/lock'
 import { useNotes } from '../lib/notes'
+import { useSchedules } from '../lib/schedules'
+import { LockedNote } from './LockForm'
 import { NoteEditor } from './NoteEditor'
 
 const noop = () => {}
@@ -22,7 +25,9 @@ export function NoteWindow() {
 }
 
 function Body({ uid, id }: { uid: string; id: string }) {
-  const { notes, fromServer } = useNotes(uid)
+  const { notes: stored, fromServer } = useNotes(uid)
+  const notes = useDecrypted(stored)
+  const schedules = useSchedules(uid)
   const note = notes.find((n) => n.id === id)
 
   useEffect(() => {
@@ -30,5 +35,17 @@ function Body({ uid, id }: { uid: string; id: string }) {
   }, [fromServer, note])
 
   if (!note) return null
-  return <NoteEditor key={note.id} uid={uid} note={note} onBack={closeNoteWindow} onTyping={noop} standalone />
+  // 잠금 메모는 열 때마다 암호를 묻는다 (푼 키는 그 창의 메모리에만 있다)
+  if (note.sealed) return <LockedNote uid={uid} title={note.title} onBack={closeNoteWindow} standalone />
+  return (
+    <NoteEditor
+      key={note.id}
+      uid={uid}
+      note={note}
+      schedules={schedules.filter((s) => s.noteId === note.id)}
+      onBack={closeNoteWindow}
+      onTyping={noop}
+      standalone
+    />
+  )
 }

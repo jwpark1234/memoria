@@ -37,6 +37,10 @@ pub fn run() {
         // 새 버전 확인·설치(GitHub Releases의 latest.json)와 설치 후 재시작
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // 일정 알림 (lib/alarms.ts)
+        .plugin(tauri_plugin_notification::init())
+        // 로그인할 때 자동 실행. 켜고 끄기는 설정 패널에서 한다 (lib/autostart.ts).
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             let toggle = MenuItem::with_id(app, "toggle", "열기/숨기기", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;

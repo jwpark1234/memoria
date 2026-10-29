@@ -20,6 +20,9 @@
     "core:window:allow-close",
     "core:webview:allow-create-webview-window",
     "updater:default",
-    "process:allow-restart"
+    "process:allow-restart",
+    "notification:default",
+    "autostart:default",
+    "opener:default"
   ]
 }

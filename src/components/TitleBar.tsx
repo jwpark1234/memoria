@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { applyUpdate, useUpdate } from '../lib/update'
 import { mainWindow, setWidget } from '../lib/widget'
+import { EasterEgg } from './EasterEgg'
 import { Icon } from './Icon'
 import { WidgetPanel } from './WidgetPanel'
 
@@ -8,11 +9,21 @@ export function TitleBar({ children }: { children?: ReactNode }) {
   const win = mainWindow
   const update = useUpdate()
   const [panel, setPanel] = useState(false)
+  const [egg, setEgg] = useState(false)
+  // 제목을 빠르게 다섯 번 누르면 이스터에그 (EasterEgg.tsx)
+  const taps = useRef<number[]>([])
+  const tapTitle = () => {
+    const now = Date.now()
+    taps.current = [...taps.current.filter((t) => now - t < 2000), now]
+    if (taps.current.length < 5) return
+    taps.current = []
+    setEgg(true)
+  }
   return (
     <>
       {/* 창 끌기는 lib/widget.ts가 창 전체에서 처리한다 */}
       <header className="titlebar">
-        <span className="title">
+        <span className="title" onClick={tapTitle}>
           Memoria
         </span>
         {update.available && (
@@ -40,6 +51,7 @@ export function TitleBar({ children }: { children?: ReactNode }) {
         )}
       </header>
       {panel && <WidgetPanel />}
+      {egg && <EasterEgg onEnd={() => setEgg(false)} />}
     </>
   )
 }

@@ -18,11 +18,13 @@ const webkitDesktop = inTauri && !/Chrome|Edg/.test(navigator.userAgent)
 
 const env = import.meta.env
 
-const app = initializeApp({
+export const app = initializeApp({
   apiKey: env.VITE_FIREBASE_API_KEY,
   authDomain: onHosting ? location.hostname : env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: env.VITE_FIREBASE_PROJECT_ID,
   appId: env.VITE_FIREBASE_APP_ID,
+  // 푸시(lib/push.ts)에 필요하다. 앱 ID("1:<프로젝트 번호>:web:…")에 들어 있는 프로젝트 번호다.
+  messagingSenderId: env.VITE_FIREBASE_APP_ID?.split(':')[1],
 })
 
 // Tauri에서는 팝업/리다이렉트 로그인을 쓰지 않으므로 resolver를 싣지 않는다.
