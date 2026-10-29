@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { CHECK, LINK } from '../lib/markup'
+import { Icon } from './Icon'
 
 // 링크는 글자 폭을 바꾸지 않게 색과 밑줄로만 표시한다 (편집기에서 textarea와 위치가 맞아야 한다)
 function inline(text: string): ReactNode[] {
@@ -38,14 +39,21 @@ interface Props {
   editor?: boolean
   // 일정이 걸린 줄 번호 → 줄 끝에 붙일 일정 시각
   alarms?: Map<number, string>
+  // 일정이 걸린 줄 번호 → 줄 끝에 작은 일정 아이콘 (목록 미리보기)
+  scheduled?: Set<number>
 }
 
-export function MarkupText({ text, editor = false, alarms }: Props) {
+export function MarkupText({ text, editor = false, alarms, scheduled }: Props) {
   return text.split('\n').map((l, i) => (
     <Fragment key={i}>
       {i > 0 && '\n'}
       {line(l, editor)}
       {alarms?.has(i) && <span className="alarm" data-label={alarms.get(i)} />}
+      {scheduled?.has(i) && (
+        <span className="scheduled" title="일정">
+          <Icon name="calendar" size={10} />
+        </span>
+      )}
     </Fragment>
   ))
 }

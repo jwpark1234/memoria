@@ -152,6 +152,7 @@ function Notes({ user }: { user: User }) {
       note={current}
       schedules={schedules.filter((s) => s.noteId === current.id)}
       onBack={() => setOpenId(null)}
+      onSchedules={() => setView('schedules')}
       onTyping={setTyping}
       onPopOut={
         pwa
@@ -165,7 +166,7 @@ function Notes({ user }: { user: User }) {
   ) : scheduleView ? (
     <ScheduleList uid={user.uid} schedules={schedules} notes={notes} onOpenNote={setOpenId} />
   ) : (
-    <NoteList notes={notes} loaded={loaded} query={query} onOpen={setOpenId} />
+    <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} />
   )
   const scheduleDialog = addingSchedule && (
     <ScheduleDialog

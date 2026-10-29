@@ -12,7 +12,7 @@ export function FontSizePicker() {
           onClick={() => setFontSize(s)}
           title={FONT_SIZE_LABEL[s]}
           aria-label={`글자 ${FONT_SIZE_LABEL[s]}`}
-          style={{ fontSize: s - 3 }}
+          style={{ fontSize: s - 2 }}
         >
           가
         </button>

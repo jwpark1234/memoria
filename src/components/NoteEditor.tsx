@@ -33,6 +33,8 @@ interface Props {
   // 이 메모에 걸린 일정 (noteId가 이 메모인 것)
   schedules: Schedule[]
   onBack: () => void
+  // 메모를 닫고 목록 대신 일정 화면으로 간다 (메인 창에서만)
+  onSchedules?: () => void
   // 저장 대기 중(디바운스)인 입력이 있는지. 아직 서버로 가지 않았으니 "동기화됨"으로 보이면 안 된다.
   onTyping: (typing: boolean) => void
   // PC: 이 메모를 따로 창으로 띄운다
@@ -43,7 +45,7 @@ interface Props {
 
 type Editing = { schedule: Schedule } | { init: ScheduleInit; line: number | null }
 
-export function NoteEditor({ uid, note, schedules, onBack, onTyping, onPopOut, standalone }: Props) {
+export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping, onPopOut, standalone }: Props) {
   const [draft, setDraft] = useState(note.text)
   const [confirming, setConfirming] = useState(false)
   const [editing, setEditing] = useState<Editing | null>(null)
@@ -340,6 +342,18 @@ export function NoteEditor({ uid, note, schedules, onBack, onTyping, onPopOut, s
         {!note.locked && (
           <button className="icon-btn" onMouseDown={keepFocus} onClick={openSchedule} title="일정 등록">
             <Icon name="bell" />
+          </button>
+        )}
+        {onSchedules && (
+          <button
+            className="icon-btn"
+            onClick={() => {
+              onSchedules()
+              back()
+            }}
+            title="일정 화면"
+          >
+            <Icon name="calendar" />
           </button>
         )}
         {onPopOut && !note.locked && (

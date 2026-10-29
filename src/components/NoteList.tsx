@@ -1,17 +1,19 @@
 import { formatDate } from '../lib/formatDate'
-import { plain } from '../lib/markup'
+import { locateItems, plain } from '../lib/markup'
 import type { Note } from '../lib/notes'
+import type { Schedule } from '../lib/schedules'
 import { Icon } from './Icon'
 import { MarkupText } from './MarkupText'
 
 interface Props {
   notes: Note[]
+  schedules: Schedule[]
   loaded: boolean
   query: string
   onOpen: (id: string) => void
 }
 
-export function NoteList({ notes, loaded, query, onOpen }: Props) {
+export function NoteList({ notes, schedules, loaded, query, onOpen }: Props) {
   const q = query.trim().toLowerCase()
   const shown = q ? notes.filter((n) => `${n.title}\n${n.text}`.toLowerCase().includes(q)) : notes
 
@@ -23,6 +25,10 @@ export function NoteList({ notes, loaded, query, onOpen }: Props) {
         const [first, ...rest] = n.text.trim().split('\n')
         const title = n.title.trim() || (n.locked ? '잠긴 메모' : plain(first))
         const body = n.locked ? '' : (n.title.trim() ? n.text : rest.join('\n')).trim()
+        // 일정이 걸린 체크리스트 항목을 본문에서 찾아 표시한다
+        const linked = schedules.flatMap((s) => (s.noteId === n.id && s.item !== null ? [{ id: s.id, item: s.item }] : []))
+        const scheduled = new Set<number>()
+        if (body && linked.length) for (const k of locateItems(body, linked).values()) if (k !== null) scheduled.add(k)
         return (
           <button key={n.id} className="card" onClick={() => onOpen(n.id)}>
             <div className="card-head">
@@ -33,7 +39,7 @@ export function NoteList({ notes, loaded, query, onOpen }: Props) {
             </div>
             {body && (
               <div className="card-body">
-                <MarkupText text={body} />
+                <MarkupText text={body} scheduled={scheduled} />
               </div>
             )}
           </button>

@@ -4,12 +4,11 @@ import { applyUpdate, useUpdate } from '../lib/update'
 import { mainWindow, setWidget } from '../lib/widget'
 import { EasterEgg } from './EasterEgg'
 import { Icon } from './Icon'
-import { WidgetPanel } from './WidgetPanel'
+import { MoreMenu } from './MoreMenu'
 
 export function TitleBar({ children }: { children?: ReactNode }) {
   const win = mainWindow
   const update = useUpdate()
-  const [panel, setPanel] = useState(false)
   const [egg, setEgg] = useState<Song | null>(null)
   // 제목을 빠르게 다섯 번 누르면 이스터에그 (EasterEgg.tsx)
   const taps = useRef<number[]>([])
@@ -43,9 +42,7 @@ export function TitleBar({ children }: { children?: ReactNode }) {
         {children}
         {win && (
           <>
-            <button className={`icon-btn${panel ? ' active' : ''}`} onClick={() => setPanel(!panel)} title="설정">
-              <Icon name="gear" />
-            </button>
+            <MoreMenu />
             {/* 숨기기·종료는 트레이 아이콘에서 한다 */}
             <button className="icon-btn" onClick={() => setWidget({ mini: true })} title="미니모드">
               <Icon name="shrink" />
@@ -53,7 +50,6 @@ export function TitleBar({ children }: { children?: ReactNode }) {
           </>
         )}
       </header>
-      {panel && <WidgetPanel />}
       {egg && (
         <EasterEgg
           duration={egg.duration}
