@@ -119,9 +119,19 @@ export function toLocalInput(ms: number): string {
   return d.toISOString().slice(0, 16)
 }
 
-/** 새 일정의 기본 시각: 다음 정각 */
-export function nextHour(): number {
+/** 그날 0시 */
+export function startOfDay(ms = Date.now()): Date {
+  const d = new Date(ms)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+/** 새 일정의 기본 시각: 다음 정각. 다른 날(day)을 골랐으면 그날 같은 시각 */
+export function nextHour(day?: Date): number {
   const d = new Date()
   d.setHours(d.getHours() + 1, 0, 0, 0)
-  return d.getTime()
+  if (!day || day.getTime() === startOfDay().getTime()) return d.getTime()
+  const on = new Date(day)
+  on.setHours(d.getHours(), 0, 0, 0)
+  return on.getTime()
 }

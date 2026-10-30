@@ -473,9 +473,8 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
 }
 .list-head { margin: 10px 2px 0; color: var(--muted); font-size: 12px; font-weight: 600; }
 
-/* 일정: 목록/달력 전환 줄. 전환 버튼은 오른쪽 끝 */
+/* 일정 달력 머리줄: 이전 달, 달 이름, 다음 달, 오늘 */
 .schedule-bar { flex: none; display: flex; align-items: center; gap: 2px; min-height: 28px; font-size: 12px; }
-.schedule-bar .segment { margin-left: auto; }
 .cal-month { padding: 0 2px; font-size: 13px; font-weight: 600; }
 
 /* 일정 달력 */
@@ -488,7 +487,13 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
+  touch-action: pan-y;
 }
+/* 넘긴 달이 민 방향에서 들어온다 */
+.cal-grid.slide-next { animation: cal-next 0.2s ease-out; }
+.cal-grid.slide-prev { animation: cal-prev 0.2s ease-out; }
+@keyframes cal-next { from { opacity: 0; transform: translateX(24px); } }
+@keyframes cal-prev { from { opacity: 0; transform: translateX(-24px); } }
 .cal-week { padding-bottom: 2px; color: var(--muted); font-size: 11px; text-align: center; }
 .cal-day {
   display: flex;

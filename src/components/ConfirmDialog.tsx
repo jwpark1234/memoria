@@ -1,3 +1,5 @@
+import { useOverlayClose } from '../lib/overlay'
+
 interface Props {
   message: string
   detail?: string
@@ -12,8 +14,9 @@ interface Props {
 
 // window.confirm은 일부 WebView(Tauri)에서 동작하지 않아서 직접 그린다.
 export function ConfirmDialog({ message, detail, confirmLabel, onConfirm, onCancel, cancelLabel = '취소', altLabel, onAlt }: Props) {
+  const overlay = useOverlayClose(onCancel)
   return (
-    <div className="overlay" onClick={onCancel} onKeyDown={(e) => e.key === 'Escape' && onCancel()}>
+    <div className="overlay" {...overlay}>
       <div className="dialog" role="alertdialog" aria-modal aria-label={message} onClick={(e) => e.stopPropagation()}>
         <p>{message}</p>
         {detail && <p className="detail">{detail}</p>}

@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react'
+import { useOverlayClose } from '../lib/overlay'
 import { changeLock, setupLock, unlock, useLockMeta, useUnlocked, type LockMeta } from '../lib/lock'
 import { Icon } from './Icon'
 
 const MIN_LENGTH = 6
 
 function Overlay({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const overlay = useOverlayClose(onClose)
   return (
-    <div className="overlay" onClick={onClose} onKeyDown={(e) => e.key === 'Escape' && onClose()}>
+    <div className="overlay" {...overlay}>
       <div className="dialog" role="dialog" aria-modal onClick={(e) => e.stopPropagation()}>
         {children}
       </div>

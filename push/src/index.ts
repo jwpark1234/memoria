@@ -18,6 +18,11 @@ interface ServiceAccount {
 
 // 이만큼 지난 일정까지 보낸다. 실행이 한두 번 빠져도 놓치지 않게 넉넉히 둔다.
 const WINDOW_MS = 15 * 60_000
+// 이만큼 앞의 일정은 미리 맡아 두었다가 정각에 보낸다. cron은 몇십 초씩 늦게 돌기도 해서
+// 시각이 지난 것만 보내면 알림이 늦는다. 다음 실행(1분 뒤)보다 넉넉히 앞까지 본다.
+const AHEAD_MS = 90_000
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export default {
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
@@ -33,30 +38,48 @@ async function run(env: Env) {
   // `at` 하나에만 범위 조건을 걸어야 복합 색인 없이 조회된다. 나머지 조건은 여기서 거른다.
   // 대부분 결과가 없어서 1분에 읽기 1회(빈 결과도 1회로 센다)다.
   const now = Date.now()
-  const due = (await db.query('schedules', 'at', new Date(now - WINDOW_MS), new Date(now))).filter(
+  const due = (await db.query('schedules', 'at', new Date(now - WINDOW_MS), new Date(now + AHEAD_MS))).filter(
     (d) => !d.fields.deleted?.booleanValue && !d.fields.done?.booleanValue && !d.fields.pushed?.booleanValue,
   )
   if (!due.length) return
   console.log(`due ${due.length}`)
 
-  const devices = await db.list('devices')
-  for (const s of due) {
-    const title = s.fields.title?.stringValue || '일정'
-    const noteId = s.fields.noteId?.stringValue
-    const note = noteId ? await db.get(`notes/${noteId}`) : null
-    const at = new Date(s.fields.at!.timestampValue!)
-    const body = [formatTime(at), note && noteTitle(note)].filter(Boolean).join(' · ')
+  // 먼저 맡았다고 표시한다: 정각을 기다리는 동안 다음 실행이 같은 일정을 또 보내지 않게
+  await Promise.all(due.map((s) => db.patch(s.name, { pushed: { booleanValue: true } })))
 
-    for (const d of devices) {
-      const fcmToken = d.fields.token?.stringValue
-      if (!fcmToken) continue
-      // tag: 앱이 직접 띄운 알림(src/lib/alarms.ts)과 같은 일정 id라 겹쳐 뜨지 않는다
-      const gone = await sendPush(sa.project_id, token, fcmToken, { title, body, tag: s.name.split('/').pop()! })
-      // 앱을 지웠거나 알림을 끈 기기
-      if (gone) await db.delete(d.name)
-    }
-    await db.patch(s.name, { pushed: { booleanValue: true } })
-  }
+  const devices = await db.list('devices')
+  const gone = new Set<string>()
+  await Promise.all(
+    due.map(async (s) => {
+      const id = s.name.split('/').pop()!
+      const wait = new Date(s.fields.at!.timestampValue!).getTime() - Date.now()
+      if (wait > 0) {
+        await sleep(wait)
+        // 기다리는 동안 끝냈거나 지웠거나 시각을 옮겼으면 보내지 않는다.
+        // 시각을 옮기면 앱이 pushed를 되돌려서 그 시각에 맞춰 다음 실행이 맡는다.
+        const latest = await db.get(`schedules/${id}`)
+        if (!latest || latest.fields.deleted?.booleanValue || latest.fields.done?.booleanValue) return
+        if (latest.fields.at?.timestampValue !== s.fields.at?.timestampValue) return
+      }
+
+      const title = s.fields.title?.stringValue || '일정'
+      const noteId = s.fields.noteId?.stringValue
+      const note = noteId ? await db.get(`notes/${noteId}`) : null
+      const at = new Date(s.fields.at!.timestampValue!)
+      const body = [formatTime(at), note && noteTitle(note)].filter(Boolean).join(' · ')
+
+      for (const d of devices) {
+        const fcmToken = d.fields.token?.stringValue
+        if (!fcmToken || gone.has(d.name)) continue
+        // tag: 앱이 직접 띄운 알림(src/lib/alarms.ts)과 같은 일정 id라 겹쳐 뜨지 않는다
+        // 앱을 지웠거나 알림을 끈 기기는 지운다
+        if (await sendPush(sa.project_id, token, fcmToken, { title, body, tag: id })) {
+          gone.add(d.name)
+          await db.delete(d.name).catch(() => {})
+        }
+      }
+    }),
+  )
 }
 
 // ── 서비스 계정 → OAuth 액세스 토큰 ──────────────────────────────────────

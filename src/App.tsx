@@ -20,7 +20,7 @@ import { noteWindowId, openNoteWindow } from './lib/noteWindows'
 import { lockNow, useDecrypted } from './lib/lock'
 import { createNote, useNotes } from './lib/notes'
 import { registerPush } from './lib/push'
-import { useSchedules } from './lib/schedules'
+import { nextHour, startOfDay, useSchedules } from './lib/schedules'
 import { useOnline } from './lib/useOnline'
 import { win } from './lib/widget'
 
@@ -90,6 +90,8 @@ function Notes({ user }: { user: User }) {
   // 목록 화면: 메모 또는 일정. 일정에서 연 메모를 닫으면 일정으로 돌아온다.
   const [view, setView] = useState<'notes' | 'schedules'>('notes')
   const [addingSchedule, setAddingSchedule] = useState(false)
+  // 일정 달력에서 고른 날. 새 일정은 이 날로 잡고, 만들면 그 일정의 날을 보여준다.
+  const [calendarDay, setCalendarDay] = useState(() => startOfDay())
   const [typing, setTyping] = useState(false)
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
@@ -164,14 +166,22 @@ function Notes({ user }: { user: User }) {
       }
     />
   ) : scheduleView ? (
-    <ScheduleList uid={user.uid} schedules={schedules} notes={notes} onOpenNote={setOpenId} />
+    <ScheduleList
+      uid={user.uid}
+      schedules={schedules}
+      notes={notes}
+      onOpenNote={setOpenId}
+      day={calendarDay}
+      onDay={setCalendarDay}
+    />
   ) : (
     <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} />
   )
   const scheduleDialog = addingSchedule && (
     <ScheduleDialog
       uid={user.uid}
-      init={{ title: '', noteId: null, item: null }}
+      init={{ title: '', noteId: null, item: null, at: nextHour(calendarDay) }}
+      onCreated={(_, at) => setCalendarDay(startOfDay(at))}
       onClose={() => setAddingSchedule(false)}
     />
   )

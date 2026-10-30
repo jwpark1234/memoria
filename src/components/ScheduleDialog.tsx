@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { askNotifyPermission } from '../lib/alarms'
 import { registerPush } from '../lib/push'
+import { useOverlayClose } from '../lib/overlay'
 import { createSchedule, nextHour, toLocalInput, updateSchedule, type Schedule } from '../lib/schedules'
 import { ConfirmDialog } from './ConfirmDialog'
 
-export type ScheduleInit = Pick<Schedule, 'title' | 'noteId' | 'item'>
+// at: 기본 시각 (없으면 다음 정각)
+export type ScheduleInit = Pick<Schedule, 'title' | 'noteId' | 'item'> & { at?: number }
 
 interface Props {
   uid: string
   // 고칠 일정. 없으면 init으로 새로 만든다.
   schedule?: Schedule
   init?: ScheduleInit
-  onCreated?: (id: string) => void
+  onCreated?: (id: string, at: number) => void
   // 지우기는 부르는 쪽이 한다. withItem: 걸린 체크리스트 항목도 지운다.
   onDelete?: (s: Schedule, withItem: boolean) => void
   onClose: () => void
@@ -21,8 +23,9 @@ interface Props {
 export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClose }: Props) {
   const base = schedule ?? { title: '', noteId: null, item: null, ...init }
   const [title, setTitle] = useState(base.title)
-  const [when, setWhen] = useState(toLocalInput(schedule?.at ?? nextHour()))
+  const [when, setWhen] = useState(toLocalInput(schedule?.at ?? init?.at ?? nextHour()))
   const [confirming, setConfirming] = useState(false)
+  const overlay = useOverlayClose(onClose)
   const at = new Date(when).getTime()
   // 체크리스트 항목에 걸린 일정의 이름은 항목 글자를 따른다 (메모에서 고친다)
   const fromItem = base.item !== null
@@ -41,7 +44,7 @@ export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClo
         ...(at !== schedule.at && { notified: false, pushed: false }),
       })
     } else {
-      onCreated?.(createSchedule(uid, { title: title.trim(), at, noteId: base.noteId, item: base.item }))
+      onCreated?.(createSchedule(uid, { title: title.trim(), at, noteId: base.noteId, item: base.item }), at)
     }
     onClose()
   }
@@ -72,7 +75,7 @@ export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClo
   }
 
   return (
-    <div className="overlay" onClick={onClose} onKeyDown={(e) => e.key === 'Escape' && onClose()}>
+    <div className="overlay" {...overlay}>
       <form
         className="dialog form"
         role="dialog"
