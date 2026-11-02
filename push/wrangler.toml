@@ -3,8 +3,11 @@
 name = "memoria-push"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
-# 1분마다 실행만 한다. 외부에서 부를 주소는 필요 없다.
-workers_dev = false
+# 버스 도착정보 인증키도 비밀값이다 (src/bus.ts): npx wrangler secret put BUSAN_BUS_KEY
+# 1분마다 실행하고, 앱이 버스 도착정보를 받아 가는 주소(https://memoria-push.<계정>.workers.dev/bus/…)를 연다.
+workers_dev = true
+# 버전마다 생기는 미리보기 주소는 쓰지 않는다
+preview_urls = false
 
 [vars]
 OWNER_UID = "J7jEHxqol0P0FDpXOmYOD4kCKrn1" # src/lib/auth.ts의 OWNER_UID

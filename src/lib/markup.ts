@@ -125,13 +125,60 @@ export function toggleDone(text: string, start: number, end: number): Edit | nul
   return build(text, ops, [start, end])
 }
 
-// 클릭한 자리가 체크박스("[ ]")면 그 줄의 체크를 바꾼다.
-export function clickCheck(text: string, pos: number): Edit | null {
+/** k번째 줄(0부터)의 체크를 바꾼다. 체크박스를 눌렀을 때. */
+export function toggleLine(text: string, k: number): Edit | null {
+  let at = 0
+  for (let i = 0; i < k; i++) {
+    at = text.indexOf('\n', at) + 1
+    if (at === 0) return null
+  }
+  return toggleDone(text, at, at)
+}
+
+// 체크리스트 줄의 표기("- [ ] ") 자리. line: 줄 맨 앞, start: 들여쓰기 뒤, end: 표기 끝(항목 글자 시작)
+export interface Prefix {
+  line: number
+  start: number
+  end: number
+}
+
+/** pos가 있는 줄이 체크리스트 항목이면 그 표기 자리 */
+export function checkPrefix(text: string, pos: number): Prefix | null {
   const l = linesIn(text, pos, pos)[0]
   const m = CHECK.exec(l.text)
-  if (!m) return null
-  const box = l.start + m[1].length + 2
-  return pos >= box && pos <= box + 3 ? toggleDone(text, pos, pos) : null
+  return m ? { line: l.start, start: l.start + m[1].length, end: l.start + m[0].length } : null
+}
+
+/**
+ * 지우기 키가 표기를 반쯤 지워 "- [ ]" 글자가 드러나지 않게, 표기를 통째로 지우는 편집.
+ * back: 항목 글자 맨 앞에서 Backspace → 체크박스만 지워 보통 줄로 만든다 (한 번 더 누르면 윗줄과 합친다).
+ * 아니면 Delete: 윗줄 끝에서 누르면 줄바꿈과 아랫줄의 체크박스를 같이 지운다.
+ */
+export function deletePrefix(text: string, pos: number, back: boolean): Edit | null {
+  if (back) {
+    const p = checkPrefix(text, pos)
+    if (!p || pos <= p.start || pos > p.end) return null
+    return { start: p.start, end: p.end, text: '', sel: [p.start, p.start] }
+  }
+  if (text[pos] !== '\n') return null
+  const p = checkPrefix(text, pos + 1)
+  return p && { start: pos, end: p.end, text: '', sel: [pos, pos] }
+}
+
+/** 복사할 글자: 체크박스를 ☐/☑로 바꿔 다른 앱에 "- [ ]"가 붙지 않게 한다. 표기 중간에서 시작한 선택은 줄 맨 앞부터. */
+export function copyText(text: string, start: number, end: number): { start: number; text: string } {
+  const p = checkPrefix(text, start)
+  if (p && start > p.line && start < p.end) start = p.line
+  return { start, text: text.slice(start, end).split('\n').map(plain).join('\n') }
+}
+
+/** 붙여 넣을 글자: 복사할 때 ☐/☑로 바꾼 체크박스를 되돌린다 */
+export function pasteText(text: string): string {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.replace(/^(\s*)([☐☑]) /, (_, sp: string, c: string) => `${sp}- [${c === '☐' ? ' ' : 'x'}] `))
+    .join('\n')
 }
 
 // 체크리스트 줄에서 Enter: 다음 항목을 만든다. 빈 항목이면 체크리스트를 끝낸다.

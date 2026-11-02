@@ -7,14 +7,14 @@ export type FontSize = (typeof FONT_SIZES)[number]
 export const FONT_SIZE_LABEL: Record<FontSize, string> = {
   11: '아주 작게',
   12: '작게',
-  13: '보통',
-  15: '크게',
-  17: '아주 크게',
+  13: '조금 작게',
+  15: '보통',
+  17: '크게',
 }
 
 const KEY = 'memoria.fontSize'
-// 휴대폰은 화면에 가까이 대고 보지 않아서 한 단계 크게 시작한다
-const DEFAULT: FontSize = matchMedia('(pointer: coarse)').matches ? 15 : 13
+// 기본은 넷째 크기. 전에는 PC만 13이었는데 위젯 글자가 작아서 휴대폰과 같게 맞췄다.
+const DEFAULT: FontSize = 15
 
 function load(): FontSize {
   try {

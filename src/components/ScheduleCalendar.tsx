@@ -15,13 +15,15 @@ interface Props {
   // 고른 날 (0시). 일정 화면을 나갔다 와도, 새 일정을 만들어도 이어지게 App이 갖는다.
   selected: Date
   onSelect: (d: Date) => void
+  // 있으면 고른 날 제목 옆에 일정 추가 버튼
+  onAdd?: () => void
 }
 
 // 이만큼(px) 넘게 옆으로 밀면 달을 넘긴다
 const SWIPE = 50
 
 /** 일정 달력: 날마다 일정 수만큼 점을 찍고, 고른 날의 일정을 아래에 보여준다. 옆으로 밀면 달을 넘긴다. */
-export function ScheduleCalendar({ schedules, row, selected, onSelect }: Props) {
+export function ScheduleCalendar({ schedules, row, selected, onSelect, onAdd }: Props) {
   const [month, setMonth] = useState(() => new Date(selected.getFullYear(), selected.getMonth(), 1))
   // 넘긴 방향: 새 달이 그쪽에서 밀려 들어온다
   const [dir, setDir] = useState<'next' | 'prev' | null>(null)
@@ -113,7 +115,15 @@ export function ScheduleCalendar({ schedules, row, selected, onSelect }: Props) 
           )
         })}
       </div>
-      <h3 className="list-head">{dayFmt.format(selected)}</h3>
+      <div className="day-head">
+        <h3 className="list-head">{dayFmt.format(selected)}</h3>
+        {onAdd && (
+          <button className="text-btn" onClick={onAdd} title="이 날에 일정 추가">
+            <Icon name="plus" size={13} />
+            일정
+          </button>
+        )}
+      </div>
       {dayList.map(row)}
       {dayList.length === 0 && <p className="cal-empty">일정 없음</p>}
     </>

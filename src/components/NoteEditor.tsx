@@ -1,16 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react'
+import {
+  checkPrefix,
   checklistItem,
-  clickCheck,
   continueChecklist,
+  copyText,
+  deletePrefix,
   findItemLine,
   lineIndexAt,
   linkAt,
   locateItems,
+  pasteText,
   plain,
   shiftItems,
   toggleChecklist,
   toggleDone,
+  toggleLine,
   type Edit,
   type ItemLines,
 } from '../lib/markup'
@@ -55,7 +69,16 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
   const dirty = useRef(false)
   const timer = useRef<number | undefined>(undefined)
   const area = useRef<HTMLTextAreaElement>(null)
+  const mirror = useRef<HTMLDivElement>(null)
   const pointer = useRef('mouse')
+  // 마지막 커서 자리. iOS는 편집 바 버튼을 누르면 textarea에서 포커스가 빠지며 커서 자리를 잃을 수 있어서 따로 기억한다.
+  const caret = useRef<number | null>(null)
+  // 한글 조합 중에는 커서를 옮기지 않는다
+  const composing = useRef(false)
+  // 체크박스를 누른 손가락 (손을 뗄 때 같은 상자면 체크를 바꾼다)
+  const touch = useRef<{ x: number; y: number; line: number } | null>(null)
+  // 마우스로 체크박스를 눌러 바꿨으면 뒤따르는 click은 무시한다
+  const boxClicked = useRef(false)
   // 물어본 뒤 목록으로 돌아간다
   const leaving = useRef(false)
   // 잠금 버튼을 눌러 암호를 묻는 중: lock = 잠그기, open = 잠금 풀기
@@ -169,11 +192,17 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
   }
 
   // 체크리스트 편집. execCommand로 넣어야 Ctrl+Z로 되돌릴 수 있다.
-  const apply = (make: (text: string, start: number, end: number) => Edit | null) => {
+  // focus=false: 입력 중이 아니면 포커스를 주지 않고 바꾼다 (휴대폰에서 체크박스만 눌렀는데 자판이 올라오지 않게)
+  const apply = (make: (text: string, start: number, end: number) => Edit | null, focus = true) => {
     const ta = area.current
     if (!ta) return false
     const edit = make(ta.value, ta.selectionStart, ta.selectionEnd)
     if (!edit) return false
+    if (!focus && document.activeElement !== ta) {
+      ta.setRangeText(edit.text, edit.start, edit.end)
+      change(ta.value)
+      return true
+    }
     ta.focus()
     ta.setSelectionRange(edit.start, edit.end)
     if (!document.execCommand(edit.text ? 'insertText' : 'delete', false, edit.text)) {
@@ -200,17 +229,109 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
     if (handled) e.preventDefault()
   }
 
-  // 링크: PC는 Ctrl(⌘)+클릭, 터치는 그냥 누르면 연다. 체크박스를 누르면 체크를 바꾼다.
+  // 링크: PC는 Ctrl(⌘)+클릭, 터치는 그냥 누르면 연다.
   const click = (e: MouseEvent<HTMLTextAreaElement>) => {
     const ta = area.current
+    if (boxClicked.current) {
+      boxClicked.current = false
+      return
+    }
     if (e.detail !== 1 || !ta || ta.selectionStart !== ta.selectionEnd) return
     const url = linkAt(ta.value, ta.selectionStart)
     if (url && (e.ctrlKey || e.metaKey || pointer.current !== 'mouse')) {
       if (pointer.current !== 'mouse') ta.blur() // 휴대폰 자판이 올라오지 않게
       openUrl(url)
-      return
     }
-    apply((text, start, end) => (start === end ? clickCheck(text, start) : null))
+  }
+
+  // ── 체크박스 ──
+  // 커서 자리로 판단하면 휴대폰에서는 손가락이 상자 옆 글자에 커서를 놓기 일쑤라, 화면에 그린 상자를 직접 찾는다.
+  // 누른 상자는 커서를 옮기지 않고(휴대폰은 자판도 올리지 않고) 체크만 바꾼다.
+  const boxAt = (x: number, y: number, slop: number): number | null => {
+    for (const el of mirror.current?.querySelectorAll<HTMLElement>('.box') ?? []) {
+      const r = el.getBoundingClientRect()
+      if (x >= r.left - slop && x <= r.right + slop && y >= r.top - 2 && y <= r.bottom + 2) return Number(el.dataset.line)
+    }
+    return null
+  }
+  const toggleBox = (k: number) => {
+    apply((text, start, end) => {
+      const edit = toggleLine(text, k)
+      return edit && { ...edit, sel: [start, end] }
+    }, false)
+  }
+  const mouseDown = (e: MouseEvent<HTMLTextAreaElement>) => {
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return
+    const k = boxAt(e.clientX, e.clientY, 2)
+    if (k === null) return
+    e.preventDefault()
+    boxClicked.current = true
+    toggleBox(k)
+  }
+  const touchStart = (e: TouchEvent<HTMLTextAreaElement>) => {
+    const t = e.touches[0]
+    const k = e.touches.length === 1 ? boxAt(t.clientX, t.clientY, 8) : null
+    touch.current = k === null ? null : { x: t.clientX, y: t.clientY, line: k }
+  }
+  const touchEnd = (e: TouchEvent<HTMLTextAreaElement>) => {
+    const start = touch.current
+    touch.current = null
+    const t = e.changedTouches[0]
+    if (!start || Math.abs(t.clientX - start.x) + Math.abs(t.clientY - start.y) > 10) return
+    // 손을 뗀 뒤의 기본 동작(커서 놓기, 포커스, click)을 막는다
+    e.preventDefault()
+    toggleBox(start.line)
+  }
+
+  // 커서가 "- [ ] " 표기 안에 들어가지 않게 항목 글자 앞으로 옮긴다 (그 안에 글자를 넣거나 지우면 표기가 깨진다).
+  // 항목 글자 맨 앞에서 ←로 옮기면 윗줄 끝으로 넘어간다.
+  const select = () => {
+    const ta = area.current
+    if (!ta || document.activeElement !== ta) return
+    let pos = ta.selectionStart
+    if (pos === ta.selectionEnd && !composing.current) {
+      const p = checkPrefix(ta.value, pos)
+      if (p && pos < p.end) {
+        pos = caret.current === p.end && pos === p.end - 1 && p.line > 0 ? p.line - 1 : p.end
+        ta.setSelectionRange(pos, pos)
+      }
+    }
+    caret.current = pos
+  }
+
+  // 지우기: 표기를 반쯤 지우지 않고 통째로 지운다. 휴대폰 자판은 keydown에 Backspace가 안 오기도 해서 beforeinput으로 받는다.
+  const applyRef = useRef(apply)
+  applyRef.current = apply
+  useEffect(() => {
+    const ta = area.current
+    if (!ta) return
+    const onBeforeInput = (e: InputEvent) => {
+      const back = e.inputType === 'deleteContentBackward'
+      if ((!back && e.inputType !== 'deleteContentForward') || e.isComposing) return
+      if (ta.selectionStart !== ta.selectionEnd) return
+      if (applyRef.current((text, start) => deletePrefix(text, start, back))) e.preventDefault()
+    }
+    ta.addEventListener('beforeinput', onBeforeInput)
+    return () => ta.removeEventListener('beforeinput', onBeforeInput)
+  }, [])
+
+  // 복사·잘라내기: 다른 앱에 "- [ ]"가 붙지 않게 체크박스를 ☐/☑로 바꾼다. 붙여넣기는 되돌린다.
+  const copy = (e: ClipboardEvent<HTMLTextAreaElement>, cut: boolean) => {
+    const ta = e.currentTarget
+    const { selectionStart: s, selectionEnd: t } = ta
+    if (s === t) return
+    const out = copyText(ta.value, s, t)
+    if (out.start === s && out.text === ta.value.slice(s, t)) return
+    e.preventDefault()
+    e.clipboardData.setData('text/plain', out.text)
+    if (cut) apply(() => ({ start: out.start, end: t, text: '', sel: [out.start, out.start] }))
+  }
+  const paste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const raw = e.clipboardData.getData('text/plain')
+    const text = pasteText(raw)
+    if (text === raw) return
+    e.preventDefault()
+    apply((_, s, t) => ({ start: s, end: t, text, sel: [s + text.length, s + text.length] }))
   }
 
   // 편집 버튼을 눌러도 textarea의 포커스와 선택 영역이 그대로 남게 한다
@@ -261,7 +382,8 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
   const openSchedule = () => {
     const ta = area.current
     const text = latest.current
-    const k = lineIndexAt(text, ta?.selectionStart ?? 0)
+    const pos = ta && document.activeElement === ta ? ta.selectionStart : (caret.current ?? ta?.selectionStart ?? 0)
+    const k = lineIndexAt(text, pos)
     const line = text.split('\n')[k] ?? ''
     const item = checklistItem(line, k)
     const existing = linked.find((s) => lines.current.get(s.id) === k)
@@ -386,7 +508,7 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
       </div>
       {/* 투명한 textarea 뒤에 같은 글자를 그려서 체크박스와 링크를 보여준다 */}
       <div className="editor-body">
-        <div className="mirror" aria-hidden>
+        <div className="mirror" ref={mirror} aria-hidden>
           <MarkupText text={draft} editor alarms={alarms} />{' '}
         </div>
         <textarea
@@ -398,7 +520,16 @@ export function NoteEditor({ uid, note, schedules, onBack, onSchedules, onTyping
           onChange={(e) => change(e.target.value)}
           onKeyDown={keyDown}
           onPointerDown={(e) => (pointer.current = e.pointerType)}
+          onMouseDown={mouseDown}
+          onTouchStart={touchStart}
+          onTouchEnd={touchEnd}
           onClick={click}
+          onSelect={select}
+          onCompositionStart={() => (composing.current = true)}
+          onCompositionEnd={() => (composing.current = false)}
+          onCopy={(e) => copy(e, false)}
+          onCut={(e) => copy(e, true)}
+          onPaste={paste}
         />
       </div>
       {locking === 'lock' && (

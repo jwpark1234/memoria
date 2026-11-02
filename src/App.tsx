@@ -1,5 +1,6 @@
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { useCallback, useEffect, useState } from 'react'
+import { BusPanel } from './components/Bus'
 import { Icon } from './components/Icon'
 import { LockedNote } from './components/LockForm'
 import { Login } from './components/Login'
@@ -100,7 +101,8 @@ function Notes({ user }: { user: User }) {
   // 잠금 메모는 열 때마다 암호를 묻는다: 메모를 닫거나 다른 메모로 넘어가면 다시 잠근다.
   // (닫히는 편집기가 마지막 저장을 먼저 한다. 저장은 부른 순간에 키를 잡는다)
   useEffect(() => () => lockNow(), [openId])
-  const scheduleView = view === 'schedules' && !current
+  // 일정 화면은 휴대폰만 따로 있다. PC는 일정 달력 아래에 메모 목록이 이어지는 한 화면이다.
+  const scheduleView = pwa && view === 'schedules' && !current
   const status: SyncStatus = !online ? 'offline' : typing ? 'typing' : pending ? 'syncing' : 'synced'
   const newNote = useCallback(() => setOpenId(createNote(user.uid)), [user.uid])
   const add = () => (scheduleView ? setAddingSchedule(true) : newNote())
@@ -136,7 +138,7 @@ function Notes({ user }: { user: User }) {
       )}
     </StatusBar>
   )
-  const viewButton = !current && (
+  const viewButton = pwa && !current && (
     <button
       className={`icon-btn${scheduleView ? ' active' : ''}`}
       onClick={() => setView(scheduleView ? 'notes' : 'schedules')}
@@ -154,7 +156,7 @@ function Notes({ user }: { user: User }) {
       note={current}
       schedules={schedules.filter((s) => s.noteId === current.id)}
       onBack={() => setOpenId(null)}
-      onSchedules={() => setView('schedules')}
+      onSchedules={pwa ? () => setView('schedules') : undefined}
       onTyping={setTyping}
       onPopOut={
         pwa
@@ -166,16 +168,41 @@ function Notes({ user }: { user: User }) {
       }
     />
   ) : scheduleView ? (
-    <ScheduleList
-      uid={user.uid}
-      schedules={schedules}
-      notes={notes}
-      onOpenNote={setOpenId}
-      day={calendarDay}
-      onDay={setCalendarDay}
-    />
+    <div className="list">
+      <ScheduleList
+        uid={user.uid}
+        schedules={schedules}
+        notes={notes}
+        onOpenNote={setOpenId}
+        day={calendarDay}
+        onDay={setCalendarDay}
+      />
+    </div>
+  ) : pwa ? (
+    <div className="list">
+      {!query && <BusPanel uid={user.uid} />}
+      <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} rows />
+    </div>
   ) : (
-    <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} />
+    // PC: 위젯 하나에 일정 달력과 메모 목록을 이어 붙여 스크롤한다. 검색 중에는 메모만.
+    <div className="list home">
+      {!searching && (
+        <>
+          <BusPanel uid={user.uid} />
+          <ScheduleList
+            uid={user.uid}
+            schedules={schedules}
+            notes={notes}
+            onOpenNote={setOpenId}
+            day={calendarDay}
+            onDay={setCalendarDay}
+            onAdd={() => setAddingSchedule(true)}
+          />
+          <h3 className="list-head">메모 {notes.length}개</h3>
+        </>
+      )}
+      <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} />
+    </div>
   )
   const scheduleDialog = addingSchedule && (
     <ScheduleDialog
@@ -233,10 +260,10 @@ function Notes({ user }: { user: User }) {
   return (
     <div className="app">
       <TitleBar>
-        <button className="icon-btn" onClick={add} title={scheduleView ? '새 일정' : '새 메모 (Ctrl/⌘+N)'}>
+        <button className="icon-btn" onClick={newNote} title="새 메모 (Ctrl/⌘+N)">
           <Icon name="plus" />
         </button>
-        {!current && !scheduleView && (
+        {!current && (
           <button
             className={`icon-btn${searching ? ' active' : ''}`}
             onClick={() => (searching ? closeSearch() : setSearching(true))}
@@ -245,9 +272,8 @@ function Notes({ user }: { user: User }) {
             <Icon name="search" />
           </button>
         )}
-        {viewButton}
       </TitleBar>
-      {!current && !scheduleView && searching && <SearchBox value={query} onChange={setQuery} onClose={closeSearch} />}
+      {!current && searching && <SearchBox value={query} onChange={setQuery} onClose={closeSearch} />}
       {body}
       {statusBar}
       {scheduleDialog}

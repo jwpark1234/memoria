@@ -213,8 +213,10 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
 }
 .segment button { padding: 2px 10px; border-radius: 5px; color: var(--muted); }
 .segment button.on { background: var(--surface); color: var(--text); font-weight: 600; }
-/* 글자 크기: 크기별 "가"를 아래쪽에 맞춘다 */
-.font-sizes button { min-width: 28px; padding: 2px 6px; line-height: 20px; }
+/* 글자 크기 슬라이더: 양끝의 작은·큰 "가", 오른쪽에 크기 이름 */
+.font-size-row { gap: 8px; }
+.font-size-row .ga { flex: none; color: var(--muted); line-height: 1; }
+.font-size-row .value { width: 56px; }
 
 /* 고정 위치 선택: 화면을 본뜬 2×2 칸 */
 .corners {
@@ -726,3 +728,145 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
   padding: 24px;
 }
 .locked-body > .detail { color: var(--muted); }
+
+/* 휴대폰: 앱을 자판 위에 보이는 영역에 맞춘다 (lib/viewport.ts). iOS가 페이지를 밀어 올린 만큼 되돌린다 */
+html.fit-viewport #root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--vv-height, 100%);
+  transform: translateY(var(--vv-top, 0px));
+}
+html.keyboard .app { padding-bottom: 0; }
+
+/* 고른 날 제목 + 일정 추가 버튼 (PC) */
+.day-head { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin-top: 10px; }
+.day-head .list-head { margin: 0 2px; }
+.day-head .text-btn { display: flex; align-items: center; gap: 2px; font-size: 12px; }
+/* PC: 일정 달력 아래에 이어지는 메모 목록 */
+.home > .list-head { margin-top: 14px; }
+
+/* 휴대폰 메모 목록: 아이폰 메모앱처럼 묶음(고정됨·메모) 안에 한 줄씩 */
+.pwa .list { gap: 10px; padding: 6px 12px 12px; }
+.note-group { display: flex; flex-direction: column; gap: 6px; }
+.note-group .list-head { margin: 4px 4px 0; color: var(--text); font-size: 15px; font-weight: 700; }
+.rows {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+}
+.row + .row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 0;
+  border-top: 1px solid var(--line);
+}
+.row:active { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.row-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.row-head > svg { flex: none; color: var(--accent); }
+.row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size, 15px);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.row-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: calc(var(--font-size, 15px) - 2px);
+}
+.row-date { flex: none; color: color-mix(in srgb, var(--text) 75%, transparent); }
+.row-progress {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+.row-progress.all { background: color-mix(in srgb, var(--ok) 20%, transparent); }
+.row-preview { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 버스 도착정보 (Bus.tsx): 즐겨찾기한 정류소+노선 */
+.bus { display: flex; flex-direction: column; gap: 4px; }
+.bus-head { display: flex; align-items: center; gap: 2px; min-height: 24px; }
+.bus-head .list-head { flex: none; margin: 0 6px 0 2px; }
+.bus-head .icon-btn { width: 24px; height: 24px; }
+.bus-note { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.bus-note.error { color: var(--danger); }
+.icon-btn.spin svg { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bus-rows {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.pwa .bus-rows { border-radius: 12px; }
+.bus-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  text-align: left;
+}
+.bus-row + .bus-row { border-top: 1px solid var(--line); }
+.bus-no {
+  flex: none;
+  min-width: 40px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #2f6fd6;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.bus-no.express { background: #d6453d; }
+.bus-no.town { background: #2f9e5a; }
+.bus-no.night { background: #4b4b55; }
+.bus-stop { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: calc(var(--font-size, 15px) - 3px); white-space: nowrap; text-overflow: ellipsis; }
+.bus-stop small, .bus-back small, .bus-stops small { color: var(--muted); font-size: 11px; }
+.bus-when { flex: none; display: flex; align-items: center; gap: 4px; font-size: calc(var(--font-size, 15px) - 2px); font-weight: 600; }
+.bus-when.soon { color: var(--danger); }
+.bus-low { padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; color: var(--muted); font-size: 10px; font-weight: 500; }
+
+/* 버스 즐겨찾기 편집 창 */
+.dialog.bus-dialog { max-width: 360px; max-height: calc(var(--vv-height, 100vh) - 48px); overflow-y: auto; }
+.bus-dialog .detail { margin: 8px 0; color: var(--muted); font-size: 12px; font-weight: 400; text-align: center; }
+.bus-dialog .detail.error { color: var(--danger); }
+.bus-favs, .bus-stops { margin: 0 0 10px; padding: 0; list-style: none; }
+.bus-favs li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.bus-search { display: flex; align-items: center; gap: 4px; }
+.bus-search .search { flex: 1; min-width: 0; margin: 0; }
+.bus-stops { margin-top: 8px; }
+.bus-stops button { width: 100%; padding: 8px 6px; border-radius: 6px; text-align: left; }
+.bus-stops li + li { border-top: 1px solid var(--line); }
+.bus-stops button:hover, .bus-line:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.bus-back { display: flex; align-items: center; gap: 4px; margin: 10px 0 4px; font-weight: 600; }
+.bus-lines { display: flex; flex-direction: column; margin-bottom: 10px; }
+.bus-line { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; text-align: left; }
+.bus-line .bus-when { flex: 1; color: var(--muted); font-weight: 400; }
+.bus-line > svg { flex: none; color: var(--muted); }
+.bus-line.on > svg { color: var(--accent); }

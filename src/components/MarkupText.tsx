@@ -19,15 +19,17 @@ function inline(text: string): ReactNode[] {
   return out
 }
 
-function line(text: string, editor: boolean): ReactNode {
+function line(text: string, index: number, editor: boolean): ReactNode {
   const m = CHECK.exec(text)
   if (!m) return inline(text)
   const done = m[2] !== ' '
   return (
     <>
       {m[1]}
-      {/* 편집기에서는 "- [ ]" 글자를 투명하게 두고 그 자리에 상자를 그린다 */}
-      <span className={`box${done ? ' done' : ''}`}>{editor ? `- [${m[2]}]` : done ? '☑' : '☐'}</span>{' '}
+      {/* 편집기에서는 "- [ ]" 글자를 투명하게 두고 그 자리에 상자를 그린다. 누른 상자를 찾을 수 있게 줄 번호를 단다 */}
+      <span className={`box${done ? ' done' : ''}`} data-line={index}>
+        {editor ? `- [${m[2]}]` : done ? '☑' : '☐'}
+      </span>{' '}
       <span className={done ? 'done' : undefined}>{inline(text.slice(m[0].length))}</span>
     </>
   )
@@ -47,7 +49,7 @@ export function MarkupText({ text, editor = false, alarms, scheduled }: Props) {
   return text.split('\n').map((l, i) => (
     <Fragment key={i}>
       {i > 0 && '\n'}
-      {line(l, editor)}
+      {line(l, i, editor)}
       {alarms?.has(i) && <span className="alarm" data-label={alarms.get(i)} />}
       {scheduled?.has(i) && (
         <span className="scheduled" title="일정">

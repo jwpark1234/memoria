@@ -5,9 +5,12 @@
 // 앱(src/lib/alarms.ts)이 쓰는 notified와 별개로 pushed를 둔다. PC 앱이 먼저 알리고 notified를 세워도
 // 휴대폰에는 푸시가 가야 하기 때문이다.
 
+import { handleBus } from './bus'
+
 interface Env {
   FIREBASE_SA: string // 서비스 계정 JSON (wrangler secret)
   OWNER_UID: string // 앱 소유자 uid (src/lib/auth.ts의 OWNER_UID)
+  BUSAN_BUS_KEY?: string // 부산 버스 도착정보 인증키 (wrangler secret, src/bus.ts)
 }
 
 interface ServiceAccount {
@@ -27,6 +30,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export default {
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(run(env))
+  },
+  // 외부에서 부르는 주소는 버스 도착정보 중계 하나뿐이다 (src/bus.ts)
+  async fetch(req: Request, env: Env) {
+    if (new URL(req.url).pathname.startsWith('/bus/')) return handleBus(req, env)
+    return new Response('not found', { status: 404 })
   },
 } satisfies ExportedHandler<Env>
 

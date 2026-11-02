@@ -6,6 +6,7 @@ import { initAutostart } from './lib/autostart'
 import { applyFontSize } from './lib/fontSize'
 import { applyTheme } from './lib/theme'
 import { initUpdate } from './lib/update'
+import { fitVisualViewport } from './lib/viewport'
 import { initWidget, win } from './lib/widget'
 import './styles.css'
 
@@ -17,6 +18,7 @@ initAutostart()
 
 // 휴대폰: iOS Safari는 user-scalable=no를 무시하고 두 손가락으로 확대한다. 그 몸짓을 막는다.
 if (!win) {
+  fitVisualViewport()
   document.addEventListener('gesturestart', (e) => e.preventDefault())
   document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false })
 }
