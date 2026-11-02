@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useArrivals, type BusFavorite } from '../lib/bus'
 import { startOfDay, type Schedule } from '../lib/schedules'
 import { MINI_SIZE, setMiniSize, setWidget } from '../lib/widget'
-import { LineNo, NEAR_MIN, withEta } from './Bus'
+import { ArrivalGroups, NEAR_MIN, withEta } from './Bus'
 import { Icon } from './Icon'
 
 // 미니 위젯 창 폭 (논리 px). 높이는 내용에 맞춘다.
@@ -73,17 +73,10 @@ export function MiniWidget({ schedules, favorites }: Props) {
         </div>
         <span>{todays.length ? `일정 ${done}/${todays.length}` : '오늘 일정 없음'}</span>
       </div>
-      {/* 버스: 10분 안에 오는 것만 남은 시간순으로 */}
+      {/* 버스: 10분 안에 오는 것만, 정류소별로 "106번 7분 후 도착" */}
       {favorites.length > 0 && at > 0 && (
         <div className="mini-bus">
-          {near.map(({ f, a, e }) => (
-            <div key={`${f.bstopid}-${f.lineid}`} className="mini-bus-row">
-              <LineNo no={f.lineno} type={a?.bustype} />
-              <span className="mini-stop">{f.stop}</span>
-              <span className={`bus-main ${e.tone}`}>{e.main}</span>
-            </div>
-          ))}
-          {near.length === 0 && <span className="mini-none">{NEAR_MIN}분 안에 오는 버스 없음</span>}
+          {near.length ? <ArrivalGroups entries={near} /> : <span className="mini-none">{NEAR_MIN}분 안에 오는 버스 없음</span>}
         </div>
       )}
     </div>

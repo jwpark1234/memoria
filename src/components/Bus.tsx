@@ -44,30 +44,65 @@ export function eta(a: Arrival | undefined): { main: string; sub: string; tone: 
   return { main: soon ? '곧 도착' : `${min}분`, sub, tone: soon ? 'soon' : min <= 5 ? 'near' : '' }
 }
 
-// 즐겨찾기를 정류소별로 묶는다 (넣은 순서대로)
-function byStop(favorites: BusFavorite[]) {
-  const groups: { bstopid: string; stop: string; arsno: string; items: BusFavorite[] }[] = []
-  for (const f of favorites) {
-    const g = groups.find((x) => x.bstopid === f.bstopid)
-    if (g) g.items.push(f)
-    else groups.push({ bstopid: f.bstopid, stop: f.stop, arsno: f.arsno, items: [f] })
+type Entry = { f: BusFavorite; a: Arrival | undefined; e: ReturnType<typeof eta>; min: number | null }
+
+/** 정류소별로 묶는다. 묶음 순서는 들어온 순서 (near는 이미 남은 시간순이라 곧 오는 버스가 있는 정류소가 위로) */
+function byStop(entries: Entry[]) {
+  const groups: { bstopid: string; stop: string; arsno: string; items: Entry[] }[] = []
+  for (const x of entries) {
+    const g = groups.find((y) => y.bstopid === x.f.bstopid)
+    if (g) g.items.push(x)
+    else groups.push({ bstopid: x.f.bstopid, stop: x.f.stop, arsno: x.f.arsno, items: [x] })
   }
   return groups
+}
+
+/** "7분 후 도착" / "곧 도착" / "운행대기" — 강조할 부분(strong)과 나머지 */
+function arrivalWords({ a, min }: Entry): { strong: string; rest: string } {
+  const first = a?.buses[0]
+  if (first && min !== null) return (min <= 1 || first.stops === 1) ? { strong: '곧 도착', rest: '' } : { strong: `${min}분`, rest: ' 후 도착' }
+  return { strong: '', rest: a?.status || '도착 정보 없음' }
+}
+
+/** 정류소별 묶음: 정류소 이름 아래에 "106번 7분 후 도착" 한 줄씩 */
+export function ArrivalGroups({ entries, onTap }: { entries: Entry[]; onTap?: () => void }) {
+  return (
+    <div className="bus-groups">
+      {byStop(entries).map((g) => (
+        <div key={g.bstopid} className="bus-group">
+          <div className="bus-stop-head">
+            <span>{g.stop}</span>
+            <small>{g.arsno}</small>
+          </div>
+          {g.items.map((x) => {
+            const w = arrivalWords(x)
+            return (
+              <button key={x.f.lineid} className="bus-item" onClick={onTap} title={x.e.sub || '새로 고침'}>
+                <LineNo no={`${x.f.lineno}번`} type={x.a?.bustype} />
+                <span className={`bus-arrive ${x.e.tone}`}>
+                  {w.strong && <b>{w.strong}</b>}
+                  {w.rest}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 interface BoardProps {
   favorites: BusFavorite[]
   onEdit: () => void
-  // PC 위젯: 창이 작아서 정류소로 묶지 않고 버스마다 한 줄 (번호 · 정류소 · 남은 시간)
-  compact?: boolean
 }
 
-/** 이 시간(분) 안에 오는 버스만 접힌 홈 화면에 보인다 */
+/** 이 시간(분) 안에 오는 버스만 접힌 화면에 보인다 */
 export const NEAR_MIN = 10
 
 /** 즐겨찾기마다 도착정보를 붙인다. near: NEAR_MIN 안에 오는 것만 남은 시간순으로 */
 export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arrival[]>) {
-  const all = favorites.map((f) => {
+  const all: Entry[] = favorites.map((f) => {
     const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
     return { f, a, e: eta(a), min: a?.buses[0]?.min ?? null }
   })
@@ -76,48 +111,15 @@ export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arriv
 }
 
 /**
- * 화면 맨 아래의 버스 도착정보. 접어 두면 10분 안에 오는 버스만 남은 시간순으로 한 줄씩,
- * 펴면 즐겨찾기 전부(휴대폰은 정류소별로 묶어서). 보이는 동안 30초마다 새로 받고, 누르면 바로 새로 받는다.
+ * 화면 맨 아래의 버스 도착정보. 접어 두면 10분 안에 오는 버스만, 펴면 즐겨찾기 전부. 둘 다 정류소별로 묶는다.
+ * 보이는 동안 30초마다 새로 받고, 누르면 바로 새로 받는다.
  */
-export function BusBoard({ favorites, onEdit, compact = false }: BoardProps) {
+export function BusBoard({ favorites, onEdit }: BoardProps) {
   const { byStop: arrivals, at, error, loading, paused, refresh } = useArrivals(favorites)
   const [open, setOpen] = useState(false)
   const status = paused ? '멈춤 · 눌러서 새로 고침' : error ? '받지 못함' : at ? `${timeFmt.format(at)} 기준` : '불러오는 중…'
   const waiting = !at && !error
   const { all, near } = withEta(favorites, arrivals)
-
-  const line = ({ f, a, e }: (typeof all)[number], sub: string) => (
-    <button key={`${f.bstopid}-${f.lineid}`} className="bus-item" onClick={refresh} title={e.sub || '새로 고침'}>
-      <LineNo no={f.lineno} type={a?.bustype} />
-      <span className="bus-sub">{sub}</span>
-      <span className={`bus-main ${e.tone}`}>{waiting ? '…' : e.main}</span>
-    </button>
-  )
-
-  let body
-  if (!open) {
-    body = waiting ? null : near.length ? (
-      <div className="bus-group">{near.map((x) => line(x, x.f.stop))}</div>
-    ) : (
-      <p className="bus-none">{NEAR_MIN}분 안에 오는 버스가 없어요</p>
-    )
-  } else if (compact) {
-    body = <div className="bus-group">{all.map((x) => line(x, x.f.stop))}</div>
-  } else {
-    body = (
-      <div className="bus-groups">
-        {byStop(favorites).map((g) => (
-          <div key={g.bstopid} className="bus-group">
-            <div className="bus-stop-head">
-              <span>{g.stop}</span>
-              <small>{g.arsno}</small>
-            </div>
-            {all.filter((x) => x.f.bstopid === g.bstopid).map((x) => line(x, waiting ? '' : x.e.sub))}
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   return (
     <section className={`bus-board${open ? ' open' : ''}`}>
@@ -139,7 +141,13 @@ export function BusBoard({ favorites, onEdit, compact = false }: BoardProps) {
           <Icon name="pencil" size={14} />
         </button>
       </div>
-      {body}
+      {waiting ? null : open ? (
+        <ArrivalGroups entries={all} onTap={refresh} />
+      ) : near.length ? (
+        <ArrivalGroups entries={near} onTap={refresh} />
+      ) : (
+        <p className="bus-none">{NEAR_MIN}분 안에 오는 버스가 없어요</p>
+      )}
     </section>
   )
 }

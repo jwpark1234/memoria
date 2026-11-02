@@ -188,7 +188,7 @@ function Notes({ user }: { user: User }) {
   )
   const busDock = !current && !filtering && busFavorites.length > 0 && (
     <div className={`bus-dock${pwa ? '' : ' widget'}`}>
-      <BusBoard favorites={busFavorites} onEdit={() => setBusSheet(true)} compact={!pwa} />
+      <BusBoard favorites={busFavorites} onEdit={() => setBusSheet(true)} />
     </div>
   )
   const dialogs = (

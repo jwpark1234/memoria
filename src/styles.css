@@ -1050,3 +1050,23 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .mini-stop { font-size: 10px; }
 .mini-bus-row .bus-main { font-size: 12px; }
 .mini-bus-row .bus-main.none, .mini-none { font-size: 10px; }
+
+/* 버스 한 줄: "106번 7분 후 도착" (분은 굵게, 5분 안은 노랑, 곧 도착은 빨강) */
+.bus-arrive { flex: 1; min-width: 0; overflow: hidden; font-size: calc(var(--font-size, 15px) - 1px); white-space: nowrap; text-overflow: ellipsis; }
+.bus-arrive b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.bus-arrive.near b { color: var(--accent); }
+.bus-arrive.soon b { color: var(--danger); }
+.bus-arrive.none { color: var(--muted); font-size: 13px; }
+/* PC 버스 카드: 정류소 묶음을 카드 안에 선으로 나눈다 */
+.bus-dock.widget .bus-groups { gap: 0; }
+.bus-dock.widget .bus-group + .bus-group { margin-top: 4px; padding-top: 2px; border-top: 1px solid var(--line); }
+.bus-dock.widget .bus-stop-head { padding: 5px 4px 1px; }
+/* 미니 위젯: 묶음도 아주 작게 */
+.mini-bus .bus-groups { gap: 3px; }
+.mini-bus .bus-group { overflow: visible; border: 0; border-radius: 0; background: none; }
+.mini-bus .bus-stop-head { padding: 0; font-size: 10px; }
+.mini-bus .bus-stop-head small { display: none; }
+.mini-bus .bus-item { gap: 6px; padding: 1px 0; }
+.mini-bus .bus-item + .bus-item::before { display: none; }
+.mini-bus .bus-no { min-width: 34px; padding: 0 4px; border-radius: 5px; font-size: 10px; }
+.mini-bus .bus-arrive { font-size: 11px; }
