@@ -2,18 +2,19 @@ import { useSyncExternalStore } from 'react'
 
 // 글자 크기. 기기별 설정이라 서버가 아닌 localStorage에 둔다. 편집기 글자 기준(px)이고 목록은 이에 맞춰 줄고 는다.
 
-export const FONT_SIZES = [11, 12, 13, 15, 17] as const
+// 보통(15px)을 가운데 두고 2px씩
+export const FONT_SIZES = [11, 13, 15, 17, 19] as const
 export type FontSize = (typeof FONT_SIZES)[number]
 export const FONT_SIZE_LABEL: Record<FontSize, string> = {
   11: '아주 작게',
-  12: '작게',
-  13: '조금 작게',
+  13: '작게',
   15: '보통',
   17: '크게',
+  19: '아주 크게',
 }
 
 const KEY = 'memoria.fontSize'
-// 기본은 넷째 크기. 전에는 PC만 13이었는데 위젯 글자가 작아서 휴대폰과 같게 맞췄다.
+// 기본은 가운데(보통). 예전 단계에만 있던 12px을 골라 두었으면 보통으로 돌아온다.
 const DEFAULT: FontSize = 15
 
 function load(): FontSize {
