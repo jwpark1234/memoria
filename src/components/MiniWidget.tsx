@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useArrivals, type BusFavorite } from '../lib/bus'
 import { startOfDay, type Schedule } from '../lib/schedules'
 import { MINI_SIZE, setMiniSize, setWidget } from '../lib/widget'
-import { eta, LineNo } from './Bus'
+import { LineNo, NEAR_MIN, withEta } from './Bus'
 import { Icon } from './Icon'
 
 // 미니 위젯 창 폭 (논리 px). 높이는 내용에 맞춘다.
-const WIDTH = 240
+const WIDTH = 200
 const weekdayFmt = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' })
 /** 2026년 11월 2일 (월) */
 const formatDay = (ms: number) => {
@@ -57,6 +57,7 @@ export function MiniWidget({ schedules, favorites }: Props) {
   const todays = schedules.filter((s) => s.at >= today && s.at < today + 86_400_000)
   const done = todays.filter((s) => s.done).length
   const pct = todays.length ? Math.round((done / todays.length) * 100) : 0
+  const { near } = withEta(favorites, arrivals)
 
   return (
     <div className="mini-widget" ref={ref} style={{ width: WIDTH }}>
@@ -72,19 +73,17 @@ export function MiniWidget({ schedules, favorites }: Props) {
         </div>
         <span>{todays.length ? `일정 ${done}/${todays.length}` : '오늘 일정 없음'}</span>
       </div>
-      {favorites.length > 0 && (
+      {/* 버스: 10분 안에 오는 것만 남은 시간순으로 */}
+      {favorites.length > 0 && at > 0 && (
         <div className="mini-bus">
-          {favorites.map((f) => {
-            const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
-            const e = eta(a)
-            return (
-              <div key={`${f.bstopid}-${f.lineid}`} className="mini-bus-row">
-                <LineNo no={f.lineno} type={a?.bustype} />
-                <span className="mini-stop">{f.stop}</span>
-                <span className={`bus-main ${e.tone}`}>{at ? e.main : '…'}</span>
-              </div>
-            )
-          })}
+          {near.map(({ f, a, e }) => (
+            <div key={`${f.bstopid}-${f.lineid}`} className="mini-bus-row">
+              <LineNo no={f.lineno} type={a?.bustype} />
+              <span className="mini-stop">{f.stop}</span>
+              <span className={`bus-main ${e.tone}`}>{e.main}</span>
+            </div>
+          ))}
+          {near.length === 0 && <span className="mini-none">{NEAR_MIN}분 안에 오는 버스 없음</span>}
         </div>
       )}
     </div>

@@ -31,7 +31,8 @@ interface Props {
   onSelect: (d: Date) => void
   // 있으면 고른 날 제목 옆에 일정 추가 버튼
   onAdd?: () => void
-  // 휴대폰: 일주일로 접어 두고 손잡이로 편다. 아니면(PC) 늘 한 달.
+  // 처음에 한 달을 펴 둘지 (PC는 펴고, 휴대폰은 일주일로 접어 둔다). 손잡이로 접고 펴고, 기기마다 기억한다.
+  defaultExpanded?: boolean
   collapsible?: boolean
 }
 
@@ -42,8 +43,16 @@ const SWIPE = 50
  * 일정 달력. 접으면 고른 날이 든 일주일, 펴면 한 달. 날마다 일정 수만큼 점을 찍고 고른 날의 일정을 아래에 보여준다.
  * 옆으로 밀면 (접었을 때는 주, 폈을 때는 달을) 넘긴다.
  */
-export function ScheduleCalendar({ schedules, row, selected, onSelect, onAdd, collapsible = false }: Props) {
-  const [open, setExpanded] = useState(() => loadExpanded(false))
+export function ScheduleCalendar({
+  schedules,
+  row,
+  selected,
+  onSelect,
+  onAdd,
+  defaultExpanded = false,
+  collapsible = true,
+}: Props) {
+  const [open, setExpanded] = useState(() => loadExpanded(defaultExpanded))
   const expanded = !collapsible || open
   // 보여주는 기간 안의 아무 날 (주 보기면 그 주, 달 보기면 그 달)
   const [anchor, setAnchor] = useState(selected)

@@ -1009,3 +1009,44 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .pwa .day-head { margin-top: 12px; }
 /* PC 버스 한 줄: 정류소 이름은 가운데에 흐리게 */
 .bus-dock .bus-group > .bus-item:first-child { padding-top: 7px; }
+
+/* 버스: 접으면 10분 안에 오는 버스만, "전체 N"으로 편다. 펴면 화면을 조금 더 쓴다 */
+.bus-toggle { flex: none; display: flex; align-items: center; gap: 2px; padding: 2px 4px; color: var(--accent); font-size: 12px; font-weight: 600; }
+.bus-none { margin: 0; padding: 2px 4px 2px 24px; color: var(--muted); font-size: 12px; }
+.bus-dock:has(.bus-board.open) { max-height: 60%; }
+.mini-none { color: var(--muted); font-size: 11px; }
+
+/* PC 위젯 배치: 달력+일정 카드, 메모 카드 목록, 버스 카드 */
+.cal-section { display: contents; }
+.widget {
+  flex: none;
+  padding: 6px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+}
+.cal-widget { display: flex; flex-direction: column; gap: 2px; }
+.cal-widget .cal { padding: 0; border: 0; border-radius: 0; background: none; }
+.cal-widget .day-head { margin-top: 2px; padding: 6px 2px 0; border-top: 1px solid var(--line); }
+.cal-widget .schedule { padding: 5px 4px 5px 6px; border: 0; border-radius: 8px; background: none; }
+.cal-widget .schedule:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.cal-widget .cal-empty { margin: 2px 4px 4px; }
+.home > .widget + .list-head { margin-top: 10px; }
+.bus-dock.widget { margin: 0 10px 10px; padding: 6px 8px 8px; background: var(--surface); }
+.bus-dock.widget .bus-group { border: 0; border-radius: 0; background: none; }
+.bus-dock.widget .bus-item { padding: 5px 4px; }
+.bus-dock.widget .bus-item + .bus-item::before { left: 4px; }
+.bus-dock.widget .bus-none { padding-left: 4px; }
+/* 미니 위젯을 더 작게 (폭 200) */
+.mini-widget { gap: 5px; padding: 5px 6px 7px 9px; border-radius: 12px; }
+.mini-date { font-size: 12px; }
+.mini-head .icon-btn { width: 20px; height: 20px; }
+.mini-progress { gap: 6px; font-size: 10px; }
+.mini-bar { height: 4px; }
+.mini-bus { gap: 3px; padding-top: 5px; }
+.mini-bus-row { gap: 6px; }
+.mini-bus-row .bus-no { min-width: 32px; padding: 0 4px; border-radius: 5px; font-size: 10px; }
+.mini-stop { font-size: 10px; }
+.mini-bus-row .bus-main { font-size: 12px; }
+.mini-bus-row .bus-main.none, .mini-none { font-size: 10px; }

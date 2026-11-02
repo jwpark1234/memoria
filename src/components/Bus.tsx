@@ -62,14 +62,65 @@ interface BoardProps {
   compact?: boolean
 }
 
-/** 화면 맨 아래의 버스 도착정보. 정류소별로 묶고, 보이는 동안 30초마다 새로 받는다. 누르면 바로 새로 받는다. */
+/** 이 시간(분) 안에 오는 버스만 접힌 홈 화면에 보인다 */
+export const NEAR_MIN = 10
+
+/** 즐겨찾기마다 도착정보를 붙인다. near: NEAR_MIN 안에 오는 것만 남은 시간순으로 */
+export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arrival[]>) {
+  const all = favorites.map((f) => {
+    const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
+    return { f, a, e: eta(a), min: a?.buses[0]?.min ?? null }
+  })
+  const near = all.filter((x) => x.min !== null && x.min <= NEAR_MIN).sort((x, y) => x.min! - y.min!)
+  return { all, near }
+}
+
+/**
+ * 화면 맨 아래의 버스 도착정보. 접어 두면 10분 안에 오는 버스만 남은 시간순으로 한 줄씩,
+ * 펴면 즐겨찾기 전부(휴대폰은 정류소별로 묶어서). 보이는 동안 30초마다 새로 받고, 누르면 바로 새로 받는다.
+ */
 export function BusBoard({ favorites, onEdit, compact = false }: BoardProps) {
   const { byStop: arrivals, at, error, loading, paused, refresh } = useArrivals(favorites)
+  const [open, setOpen] = useState(false)
   const status = paused ? '멈춤 · 눌러서 새로 고침' : error ? '받지 못함' : at ? `${timeFmt.format(at)} 기준` : '불러오는 중…'
   const waiting = !at && !error
+  const { all, near } = withEta(favorites, arrivals)
+
+  const line = ({ f, a, e }: (typeof all)[number], sub: string) => (
+    <button key={`${f.bstopid}-${f.lineid}`} className="bus-item" onClick={refresh} title={e.sub || '새로 고침'}>
+      <LineNo no={f.lineno} type={a?.bustype} />
+      <span className="bus-sub">{sub}</span>
+      <span className={`bus-main ${e.tone}`}>{waiting ? '…' : e.main}</span>
+    </button>
+  )
+
+  let body
+  if (!open) {
+    body = waiting ? null : near.length ? (
+      <div className="bus-group">{near.map((x) => line(x, x.f.stop))}</div>
+    ) : (
+      <p className="bus-none">{NEAR_MIN}분 안에 오는 버스가 없어요</p>
+    )
+  } else if (compact) {
+    body = <div className="bus-group">{all.map((x) => line(x, x.f.stop))}</div>
+  } else {
+    body = (
+      <div className="bus-groups">
+        {byStop(favorites).map((g) => (
+          <div key={g.bstopid} className="bus-group">
+            <div className="bus-stop-head">
+              <span>{g.stop}</span>
+              <small>{g.arsno}</small>
+            </div>
+            {all.filter((x) => x.f.bstopid === g.bstopid).map((x) => line(x, waiting ? '' : x.e.sub))}
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <section className="bus-board">
+    <section className={`bus-board${open ? ' open' : ''}`}>
       <div className="bus-bar">
         <Icon name="bus" size={14} />
         <button className={`bus-status${error ? ' error' : ''}`} onClick={refresh} title={error ?? '새로 고침'}>
@@ -78,47 +129,17 @@ export function BusBoard({ favorites, onEdit, compact = false }: BoardProps) {
             <Icon name="refresh" size={11} />
           </span>
         </button>
+        <button className="bus-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+          {open ? '접기' : `전체 ${favorites.length}`}
+          <span className={`cal-caret${open ? '' : ' up'}`}>
+            <Icon name="forward" size={11} />
+          </span>
+        </button>
         <button className="icon-btn" onClick={onEdit} title="버스 즐겨찾기 편집">
           <Icon name="pencil" size={14} />
         </button>
       </div>
-      {compact ? (
-        <div className="bus-group">
-          {favorites.map((f) => {
-            const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
-            const e = eta(a)
-            return (
-              <button key={`${f.bstopid}-${f.lineid}`} className="bus-item" onClick={refresh} title={e.sub || '새로 고침'}>
-                <LineNo no={f.lineno} type={a?.bustype} />
-                <span className="bus-sub">{f.stop}</span>
-                <span className={`bus-main ${e.tone}`}>{waiting ? '…' : e.main}</span>
-              </button>
-            )
-          })}
-        </div>
-      ) : (
-      <div className="bus-groups">
-        {byStop(favorites).map((g) => (
-          <div key={g.bstopid} className="bus-group">
-            <div className="bus-stop-head">
-              <span>{g.stop}</span>
-              <small>{g.arsno}</small>
-            </div>
-            {g.items.map((f) => {
-              const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
-              const e = eta(a)
-              return (
-                <button key={f.lineid} className="bus-item" onClick={refresh} title="새로 고침">
-                  <LineNo no={f.lineno} type={a?.bustype} />
-                  <span className="bus-sub">{waiting ? '' : e.sub}</span>
-                  <span className={`bus-main ${e.tone}`}>{waiting ? '…' : e.main}</span>
-                </button>
-              )
-            })}
-          </div>
-        ))}
-      </div>
-      )}
+      {body}
     </section>
   )
 }

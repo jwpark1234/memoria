@@ -55,5 +55,9 @@ export function setFontSize(s: FontSize) {
   listeners.forEach((l) => l())
 }
 
+// PC(데스크톱 앱)는 화면을 가까이서 보므로 같은 단계라도 2px 작게 그린다 (보통 15px → 13px)
+const PC_SMALLER = '__TAURI_INTERNALS__' in window ? 2 : 0
+
 /** 앱 시작 시와 크기가 바뀔 때 */
-export const applyFontSize = () => document.documentElement.style.setProperty('--font-size', `${size}px`)
+export const applyFontSize = () =>
+  document.documentElement.style.setProperty('--font-size', `${size - PC_SMALLER}px`)

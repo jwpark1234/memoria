@@ -15,11 +15,11 @@ interface Props {
   onDay: (d: Date) => void
   // 고른 날의 제목 옆에 일정 추가 버튼 (PC: 메모 목록과 한 화면이라 + 버튼은 새 메모다)
   onAdd?: () => void
-  collapsible?: boolean
+  defaultExpanded?: boolean
 }
 
 /** 일정 달력과 고른 날의 일정. 부르는 쪽이 .list로 감싼다. */
-export function ScheduleList({ uid, schedules, notes, onOpenNote, day, onDay, onAdd, collapsible }: Props) {
+export function ScheduleList({ uid, schedules, notes, onOpenNote, day, onDay, onAdd, defaultExpanded }: Props) {
   const [editing, setEditing] = useState<Schedule | null>(null)
   const noteOf = (s: Schedule) => (s.noteId ? notes.find((n) => n.id === s.noteId) : undefined)
 
@@ -70,7 +70,7 @@ export function ScheduleList({ uid, schedules, notes, onOpenNote, day, onDay, on
         selected={day}
         onSelect={onDay}
         onAdd={onAdd}
-        collapsible={collapsible}
+        defaultExpanded={defaultExpanded}
       />
       {editing && (
         <ScheduleDialog

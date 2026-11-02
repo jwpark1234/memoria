@@ -167,16 +167,19 @@ function Notes({ user }: { user: User }) {
     <div className="list home">
       {!filtering && (
         <>
-          <ScheduleList
-            uid={user.uid}
-            schedules={schedules}
-            notes={notes}
-            onOpenNote={setOpenId}
-            day={calendarDay}
-            onDay={setCalendarDay}
-            onAdd={() => setAddingSchedule(true)}
-            collapsible={pwa}
-          />
+          {/* PC는 위젯 카드: 달력과 고른 날의 일정을 한 카드에 */}
+          <section className={pwa ? 'cal-section' : 'widget cal-widget'}>
+            <ScheduleList
+              uid={user.uid}
+              schedules={schedules}
+              notes={notes}
+              onOpenNote={setOpenId}
+              day={calendarDay}
+              onDay={setCalendarDay}
+              onAdd={() => setAddingSchedule(true)}
+              defaultExpanded={!pwa}
+            />
+          </section>
           {!pwa && <h3 className="list-head">메모 {notes.length}개</h3>}
         </>
       )}
@@ -184,7 +187,7 @@ function Notes({ user }: { user: User }) {
     </div>
   )
   const busDock = !current && !filtering && busFavorites.length > 0 && (
-    <div className="bus-dock">
+    <div className={`bus-dock${pwa ? '' : ' widget'}`}>
       <BusBoard favorites={busFavorites} onEdit={() => setBusSheet(true)} compact={!pwa} />
     </div>
   )
