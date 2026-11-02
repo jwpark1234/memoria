@@ -30,7 +30,7 @@ const KEY = 'memoria.widget'
 const EDGE_MARGIN = 16 // 화면 가장자리와의 간격 (논리 px)
 const NEIGHBOR_GAP = 8 // 같은 귀퉁이의 다른 위젯과의 간격 (논리 px)
 const NEIGHBOR_POLL = 1000 // 다른 위젯이 접히거나 펼쳐지는 것을 따라가는 주기 (ms)
-export const MINI_SIZE = 60 // 미니모드 창 한 변 (논리 px)
+export const MINI_SIZE = 60 // 로그인 전 미니모드(원형 아이콘) 창 한 변 (논리 px)
 const MIN_SIZE: Size = { width: 260, height: 220 } // tauri.conf.json의 minWidth/minHeight
 const DEFAULTS: WidgetSettings = {
   opacity: 1,
@@ -238,7 +238,7 @@ async function resizeForMini(win: NonNullable<typeof mainWindow>, mini: boolean,
     await win.setResizable(false)
     await win.setShadow(false) // Windows에서 테두리 없는 창의 사각 그림자·테두리가 원 둘레에 보이지 않게
     await win.setMinSize(null)
-    await resizeTo({ width: MINI_SIZE, height: MINI_SIZE })
+    await resizeTo(miniSize)
   } else {
     await win.setMinSize(new LogicalSize(MIN_SIZE.width, MIN_SIZE.height))
     await resizeTo(settings.size)
@@ -246,6 +246,16 @@ async function resizeForMini(win: NonNullable<typeof mainWindow>, mini: boolean,
     await win.setResizable(true)
     setNoteWindowsVisible(true)
   }
+}
+
+// 미니모드 창 크기. 로그인하면 미니 위젯(MiniWidget)이 내용 높이를 재서 알려 준다.
+let miniSize: Size = { width: MINI_SIZE, height: MINI_SIZE }
+
+/** 미니 위젯의 크기가 바뀌었다. 미니모드면 창을 그 크기로 맞춘다. */
+export function setMiniSize(size: Size) {
+  if (size.width === miniSize.width && size.height === miniSize.height) return
+  miniSize = size
+  if (settings.mini && mainWindow) resizeTo(miniSize)
 }
 
 /** 앱 시작 시 한 번 호출: 저장된 설정을 창에 적용하고, 크기가 바뀌면 고정 위치를 다시 맞춘다. */

@@ -475,45 +475,59 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
 }
 .list-head { margin: 10px 2px 0; color: var(--muted); font-size: 12px; font-weight: 600; }
 
-/* 일정 달력 머리줄: 이전 달, 달 이름, 다음 달, 오늘 */
-.schedule-bar { flex: none; display: flex; align-items: center; gap: 2px; min-height: 28px; font-size: 12px; }
-.cal-month { padding: 0 2px; font-size: 13px; font-weight: 600; }
-
-/* 일정 달력 */
-.cal-grid {
+/* 일정 달력: 머리줄(달 이름 · 오늘 · 이전/다음)과 날짜 칸을 한 카드에. 휴대폰은 손잡이로 일주일↔한 달 */
+.cal {
   flex: none;
+  padding: 4px 6px 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.schedule-bar { flex: none; display: flex; align-items: center; gap: 2px; min-height: 30px; padding-left: 4px; font-size: 12px; }
+.cal-month { display: flex; align-items: center; gap: 4px; padding: 0; font-size: 14px; font-weight: 700; }
+.cal-caret { display: grid; color: var(--muted); transform: rotate(90deg); transition: transform 0.2s; }
+.cal-caret.up { transform: rotate(-90deg); }
+.cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
+  row-gap: 2px;
+  padding: 2px 0 4px;
   touch-action: pan-y;
 }
-/* 넘긴 달이 민 방향에서 들어온다 */
+/* 넘긴 기간이 민 방향에서 들어온다 */
 .cal-grid.slide-next { animation: cal-next 0.2s ease-out; }
 .cal-grid.slide-prev { animation: cal-prev 0.2s ease-out; }
 @keyframes cal-next { from { opacity: 0; transform: translateX(24px); } }
 @keyframes cal-prev { from { opacity: 0; transform: translateX(-24px); } }
-.cal-week { padding-bottom: 2px; color: var(--muted); font-size: 11px; text-align: center; }
+.cal-week { padding: 2px 0; color: var(--muted); font-size: 11px; text-align: center; }
+.cal-week:first-child { color: var(--danger); }
 .cal-day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 4px 0 3px;
-  border-radius: 6px;
+  gap: 1px;
+  padding: 1px 0 2px;
   font-size: 12px;
 }
-.cal-day:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+.cal-num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+}
+.cal-day:hover .cal-num { background: color-mix(in srgb, var(--text) 8%, transparent); }
 .cal-day.sun { color: var(--danger); }
 .cal-day.other { opacity: 0.35; }
-.cal-day.today { color: var(--accent); font-weight: 700; }
-.cal-day.sel { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.cal-day.today .cal-num { color: var(--accent); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.cal-day.sel .cal-num { background: var(--accent); color: #1c1c1e; font-weight: 700; box-shadow: none; }
 .cal-dots { display: flex; gap: 2px; height: 4px; }
 .cal-dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
 .cal-dots i.done { background: var(--muted); }
+.cal-handle { display: grid; place-items: center; width: 100%; height: 14px; }
+.cal-handle i { width: 36px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--muted) 45%, transparent); }
+.pwa .cal-num { width: 32px; height: 32px; font-size: 14px; }
 .cal-empty { margin: 4px 2px; color: var(--muted); font-size: 12px; }
 
 /* 이스터에그: 제목을 다섯 번 누르면 음표가 떠오른다 (EasterEgg.tsx) */
@@ -807,66 +821,191 @@ html.keyboard .app { padding-bottom: 0; }
 .row-progress.all { background: color-mix(in srgb, var(--ok) 20%, transparent); }
 .row-preview { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* 버스 도착정보 (Bus.tsx): 즐겨찾기한 정류소+노선 */
-.bus { display: flex; flex-direction: column; gap: 4px; }
-.bus-head { display: flex; align-items: center; gap: 2px; min-height: 24px; }
-.bus-head .list-head { flex: none; margin: 0 6px 0 2px; }
-.bus-head .icon-btn { width: 24px; height: 24px; }
-.bus-note { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
-.bus-note.error { color: var(--danger); }
-.icon-btn.spin svg { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.bus-rows {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
+/* 버스 도착정보 (Bus.tsx): 화면 맨 아래. 정류소별 카드에 노선마다 한 줄: 번호 · 정거장/다음 차 · 남은 시간 */
+.bus-dock {
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
 }
-.pwa .bus-rows { border-radius: 12px; }
-.bus-row {
+.pwa .bus-dock { padding: 8px 12px; }
+.bus-board { display: flex; flex-direction: column; gap: 6px; }
+.bus-bar { display: flex; align-items: center; gap: 6px; padding-left: 4px; color: var(--accent); }
+.bus-bar .icon-btn { width: 26px; height: 26px; }
+.bus-status {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 10px;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
   text-align: left;
+  white-space: nowrap;
 }
-.bus-row + .bus-row { border-top: 1px solid var(--line); }
+.bus-status.error { color: var(--danger); }
+.bus-status span { display: grid; }
+.spin svg { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bus-groups { display: flex; flex-direction: column; gap: 6px; }
+.bus-group {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.bus-stop-head { display: flex; align-items: baseline; gap: 6px; padding: 7px 12px 1px; font-size: 12px; font-weight: 600; }
+.bus-stop-head small { color: var(--muted); font-size: 11px; font-weight: 400; }
+.bus-item { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 12px; text-align: left; }
+.bus-item + .bus-item::before { content: ''; position: absolute; top: 0; left: 12px; right: 0; border-top: 1px solid var(--line); }
+.bus-sub { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.bus-main { flex: none; font-size: calc(var(--font-size, 15px) + 1px); font-weight: 700; font-variant-numeric: tabular-nums; }
+.bus-main.near { color: var(--accent); }
+.bus-main.soon { color: var(--danger); }
+.bus-main.none { color: var(--muted); font-size: 13px; font-weight: 500; }
 .bus-no {
   flex: none;
-  min-width: 40px;
-  padding: 1px 6px;
+  min-width: 46px;
+  padding: 2px 7px;
   border-radius: 6px;
   background: #2f6fd6;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   text-align: center;
+  white-space: nowrap;
 }
 .bus-no.express { background: #d6453d; }
 .bus-no.town { background: #2f9e5a; }
 .bus-no.night { background: #4b4b55; }
-.bus-stop { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: calc(var(--font-size, 15px) - 3px); white-space: nowrap; text-overflow: ellipsis; }
-.bus-stop small, .bus-back small, .bus-stops small { color: var(--muted); font-size: 11px; }
-.bus-when { flex: none; display: flex; align-items: center; gap: 4px; font-size: calc(var(--font-size, 15px) - 2px); font-weight: 600; }
-.bus-when.soon { color: var(--danger); }
-.bus-low { padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; color: var(--muted); font-size: 10px; font-weight: 500; }
 
-/* 버스 즐겨찾기 편집 창 */
-.dialog.bus-dialog { max-width: 360px; max-height: calc(var(--vv-height, 100vh) - 48px); overflow-y: auto; }
-.bus-dialog .detail { margin: 8px 0; color: var(--muted); font-size: 12px; font-weight: 400; text-align: center; }
-.bus-dialog .detail.error { color: var(--danger); }
-.bus-favs, .bus-stops { margin: 0 0 10px; padding: 0; list-style: none; }
-.bus-favs li { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-.bus-search { display: flex; align-items: center; gap: 4px; }
-.bus-search .search { flex: 1; min-width: 0; margin: 0; }
-.bus-stops { margin-top: 8px; }
-.bus-stops button { width: 100%; padding: 8px 6px; border-radius: 6px; text-align: left; }
-.bus-stops li + li { border-top: 1px solid var(--line); }
-.bus-stops button:hover, .bus-line:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
-.bus-back { display: flex; align-items: center; gap: 4px; margin: 10px 0 4px; font-weight: 600; }
-.bus-lines { display: flex; flex-direction: column; margin-bottom: 10px; }
-.bus-line { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 6px; text-align: left; }
-.bus-line .bus-when { flex: 1; color: var(--muted); font-weight: 400; }
-.bus-line > svg { flex: none; color: var(--muted); }
-.bus-line.on > svg { color: var(--accent); }
+/* 버스 즐겨찾기 시트: 아래에서 올라온다 */
+.overlay.sheet-overlay { place-items: end center; padding: 0; }
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  height: min(640px, calc(var(--vv-height, 100vh) - 32px));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-radius: 16px 16px 0 0;
+  background: var(--bg);
+  box-shadow: 0 -8px 40px rgb(0 0 0 / 0.25);
+  animation: sheet-up 0.22s ease-out;
+}
+html.keyboard .sheet { padding-bottom: 0; }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+.sheet-head {
+  flex: none;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  padding: 10px 6px 6px;
+}
+.sheet-head > :last-child { justify-self: end; }
+.sheet-title { display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center; }
+.sheet-title strong { max-width: 100%; overflow: hidden; font-size: 16px; white-space: nowrap; text-overflow: ellipsis; }
+.sheet-title small { max-width: 100%; overflow: hidden; color: var(--muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.sheet-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.sheet-search:focus-within { border-color: var(--accent); }
+.sheet-search input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 16px; }
+.sheet-section .list-head { margin: 14px 4px 6px; }
+.sheet-list { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.sheet-list > .sheet-note { margin: 14px; }
+.sheet-item { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 8px 12px 8px 14px; text-align: left; }
+.sheet-item + .sheet-item::before { content: ''; position: absolute; top: 0; left: 14px; right: 0; border-top: 1px solid var(--line); }
+button.sheet-item:active,
+.sheet-item:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.sheet-item > svg { flex: none; color: var(--muted); }
+.sheet-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sheet-main > span { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.sheet-main > small { overflow: hidden; color: var(--muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.sheet-note { margin: 24px 8px; color: var(--muted); font-size: 13px; line-height: 1.6; text-align: center; }
+.sheet-note.error { margin: 10px 4px; color: var(--danger); }
+.pill {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pill.on { background: var(--accent); color: #1c1c1e; }
+.sheet-item .remove {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+}
+
+/* PC 미니모드 위젯 (MiniWidget.tsx): 펼치기 · 오늘 날짜 · 오늘 일정 진행 막대 · 버스. 창 높이는 내용에 맞춘다 */
+html.mini-widget-on .mini-bubble { display: none; }
+.mini-widget {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  opacity: var(--opacity, 1);
+}
+/* 미니모드가 아닐 때도 높이를 잴 수 있게 자리는 두고 감춘다 */
+html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
+.mini-head { display: flex; align-items: center; gap: 4px; }
+.mini-date { flex: 1; font-size: 13px; font-weight: 700; }
+.mini-head .icon-btn { width: 24px; height: 24px; }
+.mini-progress { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mini-bar { flex: 1; height: 6px; overflow: hidden; border-radius: 3px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.mini-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s; }
+.mini-bar.full i { background: var(--ok); }
+.mini-bus { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+.mini-bus-row { display: flex; align-items: center; gap: 8px; }
+.mini-bus-row .bus-no { min-width: 38px; padding: 1px 5px; font-size: 11px; }
+.mini-stop { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.mini-bus-row .bus-main { font-size: 13px; }
+.mini-bus-row .bus-main.none { font-size: 11px; }
+
+/* 휴대폰 한 화면: 고른 날 제목을 메모 묶음 제목(고정됨·메모)과 같은 크기로 */
+.pwa .day-head .list-head { margin-left: 4px; color: var(--text); font-size: 15px; font-weight: 700; }
+.pwa .day-head { margin-top: 12px; }
+/* PC 버스 한 줄: 정류소 이름은 가운데에 흐리게 */
+.bus-dock .bus-group > .bus-item:first-child { padding-top: 7px; }

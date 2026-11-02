@@ -82,7 +82,7 @@ export function NoteList({ notes, schedules, loaded, query, onOpen, rows = false
     return (
       <>
         {group('고정됨', pinned)}
-        {group(q ? '검색 결과' : pinned.length ? '메모' : '', rest)}
+        {group(q ? '검색 결과' : '메모', rest)}
         {empty}
       </>
     )

@@ -1,9 +1,10 @@
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { useCallback, useEffect, useState } from 'react'
-import { BusPanel } from './components/Bus'
+import { BusBoard, BusSheet } from './components/Bus'
 import { Icon } from './components/Icon'
 import { LockedNote } from './components/LockForm'
 import { Login } from './components/Login'
+import { MiniWidget } from './components/MiniWidget'
 import { MoreMenu } from './components/MoreMenu'
 import { NoteEditor } from './components/NoteEditor'
 import { NoteList } from './components/NoteList'
@@ -19,6 +20,7 @@ import { auth } from './lib/firebase'
 import { formatDate } from './lib/formatDate'
 import { noteWindowId, openNoteWindow } from './lib/noteWindows'
 import { lockNow, useDecrypted } from './lib/lock'
+import { busEnabled, useBusFavorites } from './lib/bus'
 import { createNote, useNotes } from './lib/notes'
 import { registerPush } from './lib/push'
 import { nextHour, startOfDay, useSchedules } from './lib/schedules'
@@ -88,28 +90,27 @@ function Notes({ user }: { user: User }) {
   }, [user.uid])
   const online = useOnline()
   const [openId, setOpenId] = useState<string | null>(null)
-  // 목록 화면: 메모 또는 일정. 일정에서 연 메모를 닫으면 일정으로 돌아온다.
-  const [view, setView] = useState<'notes' | 'schedules'>('notes')
   const [addingSchedule, setAddingSchedule] = useState(false)
   // 일정 달력에서 고른 날. 새 일정은 이 날로 잡고, 만들면 그 일정의 날을 보여준다.
   const [calendarDay, setCalendarDay] = useState(() => startOfDay())
   const [typing, setTyping] = useState(false)
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
+  const busFavorites = useBusFavorites(user.uid)
+  const [busSheet, setBusSheet] = useState(false)
 
   const current = notes.find((n) => n.id === openId)
   // 잠금 메모는 열 때마다 암호를 묻는다: 메모를 닫거나 다른 메모로 넘어가면 다시 잠근다.
   // (닫히는 편집기가 마지막 저장을 먼저 한다. 저장은 부른 순간에 키를 잡는다)
   useEffect(() => () => lockNow(), [openId])
-  // 일정 화면은 휴대폰만 따로 있다. PC는 일정 달력 아래에 메모 목록이 이어지는 한 화면이다.
-  const scheduleView = pwa && view === 'schedules' && !current
   const status: SyncStatus = !online ? 'offline' : typing ? 'typing' : pending ? 'syncing' : 'synced'
   const newNote = useCallback(() => setOpenId(createNote(user.uid)), [user.uid])
-  const add = () => (scheduleView ? setAddingSchedule(true) : newNote())
   const closeSearch = () => {
     setSearching(false)
     setQuery('')
   }
+  // 검색 중에는 달력·일정·버스를 접고 메모만 보인다 (휴대폰은 하단 검색칸에 글자가 있을 때)
+  const filtering = pwa ? query.trim() !== '' : searching
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,7 +122,6 @@ function Notes({ user }: { user: User }) {
       } else if (key === 'f') {
         e.preventDefault()
         setOpenId(null)
-        setView('notes')
         setSearching(true)
       }
     }
@@ -138,15 +138,12 @@ function Notes({ user }: { user: User }) {
       )}
     </StatusBar>
   )
-  const viewButton = pwa && !current && (
-    <button
-      className={`icon-btn${scheduleView ? ' active' : ''}`}
-      onClick={() => setView(scheduleView ? 'notes' : 'schedules')}
-      title={scheduleView ? '메모 목록' : '일정'}
-    >
-      <Icon name="calendar" />
+  const busButton = busEnabled && !current && (
+    <button className={`icon-btn${busSheet ? ' active' : ''}`} onClick={() => setBusSheet(true)} title="버스 즐겨찾기">
+      <Icon name="bus" />
     </button>
   )
+  // 한 화면: 일정 달력(접으면 일주일) → 고른 날의 일정 → 메모. 버스 도착정보는 화면 맨 아래에 붙인다.
   const body = current?.sealed ? (
     <LockedNote uid={user.uid} title={current.title} onBack={() => setOpenId(null)} />
   ) : current ? (
@@ -156,7 +153,6 @@ function Notes({ user }: { user: User }) {
       note={current}
       schedules={schedules.filter((s) => s.noteId === current.id)}
       onBack={() => setOpenId(null)}
-      onSchedules={pwa ? () => setView('schedules') : undefined}
       onTyping={setTyping}
       onPopOut={
         pwa
@@ -167,28 +163,10 @@ function Notes({ user }: { user: User }) {
             }
       }
     />
-  ) : scheduleView ? (
-    <div className="list">
-      <ScheduleList
-        uid={user.uid}
-        schedules={schedules}
-        notes={notes}
-        onOpenNote={setOpenId}
-        day={calendarDay}
-        onDay={setCalendarDay}
-      />
-    </div>
-  ) : pwa ? (
-    <div className="list">
-      {!query && <BusPanel uid={user.uid} />}
-      <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} rows />
-    </div>
   ) : (
-    // PC: 위젯 하나에 일정 달력과 메모 목록을 이어 붙여 스크롤한다. 검색 중에는 메모만.
     <div className="list home">
-      {!searching && (
+      {!filtering && (
         <>
-          <BusPanel uid={user.uid} />
           <ScheduleList
             uid={user.uid}
             schedules={schedules}
@@ -197,20 +175,31 @@ function Notes({ user }: { user: User }) {
             day={calendarDay}
             onDay={setCalendarDay}
             onAdd={() => setAddingSchedule(true)}
+            collapsible={pwa}
           />
-          <h3 className="list-head">메모 {notes.length}개</h3>
+          {!pwa && <h3 className="list-head">메모 {notes.length}개</h3>}
         </>
       )}
-      <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} />
+      <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} rows={pwa} />
     </div>
   )
-  const scheduleDialog = addingSchedule && (
-    <ScheduleDialog
-      uid={user.uid}
-      init={{ title: '', noteId: null, item: null, at: nextHour(calendarDay) }}
-      onCreated={(_, at) => setCalendarDay(startOfDay(at))}
-      onClose={() => setAddingSchedule(false)}
-    />
+  const busDock = !current && !filtering && busFavorites.length > 0 && (
+    <div className="bus-dock">
+      <BusBoard favorites={busFavorites} onEdit={() => setBusSheet(true)} compact={!pwa} />
+    </div>
+  )
+  const dialogs = (
+    <>
+      {addingSchedule && (
+        <ScheduleDialog
+          uid={user.uid}
+          init={{ title: '', noteId: null, item: null, at: nextHour(calendarDay) }}
+          onCreated={(_, at) => setCalendarDay(startOfDay(at))}
+          onClose={() => setAddingSchedule(false)}
+        />
+      )}
+      {busSheet && <BusSheet uid={user.uid} favorites={busFavorites} onClose={() => setBusSheet(false)} />}
+    </>
   )
 
   if (pwa) {
@@ -221,43 +210,39 @@ function Notes({ user }: { user: User }) {
     return (
       <div className="app pwa">
         <TitleBar>
-          {viewButton}
+          {busButton}
           <MoreMenu />
         </TitleBar>
         {body}
-        {/* 하단 도구줄은 목록에서만: 아이폰 메모앱처럼 검색칸은 늘 열려 있고, 오른쪽에 추가 버튼. 맨 아래는 상태·계정 줄 */}
+        {busDock}
+        {/* 하단 도구줄은 목록에서만: 아이폰 메모앱처럼 검색칸은 늘 열려 있고, 오른쪽에 새 메모 버튼. 맨 아래는 상태·계정 줄 */}
         {!current && (
           <nav className="bottombar">
-            {scheduleView ? (
-              <span className="count">일정 {schedules.filter((s) => !s.done).length}개</span>
-            ) : (
-              <>
-                <SearchBox
-                  value={query}
-                  onChange={setQuery}
-                  onClose={cancelSearch}
-                  placeholder={`메모 ${notes.length}개 검색`}
-                  autoFocus={false}
-                />
-                {query && (
-                  <button className="text-btn" onClick={cancelSearch}>
-                    취소
-                  </button>
-                )}
-              </>
+            <SearchBox
+              value={query}
+              onChange={setQuery}
+              onClose={cancelSearch}
+              placeholder={`메모 ${notes.length}개 검색`}
+              autoFocus={false}
+            />
+            {query && (
+              <button className="text-btn" onClick={cancelSearch}>
+                취소
+              </button>
             )}
-            <button className="icon-btn" onClick={add} title={scheduleView ? '새 일정' : '새 메모'}>
+            <button className="icon-btn" onClick={newNote} title="새 메모">
               <Icon name="plus" />
             </button>
           </nav>
         )}
         {statusBar}
-        {scheduleDialog}
+        {dialogs}
       </div>
     )
   }
 
   return (
+    <>
     <div className="app">
       <TitleBar>
         <button className="icon-btn" onClick={newNote} title="새 메모 (Ctrl/⌘+N)">
@@ -272,11 +257,16 @@ function Notes({ user }: { user: User }) {
             <Icon name="search" />
           </button>
         )}
+        {busButton}
       </TitleBar>
       {!current && searching && <SearchBox value={query} onChange={setQuery} onClose={closeSearch} />}
       {body}
+      {busDock}
       {statusBar}
-      {scheduleDialog}
+      {dialogs}
     </div>
+    {/* 미니모드에서는 .app을 가리고 이 위젯만 보인다 */}
+    <MiniWidget schedules={schedules} favorites={busFavorites} />
+    </>
   )
 }

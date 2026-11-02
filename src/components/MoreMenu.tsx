@@ -6,8 +6,6 @@ import { auth } from '../lib/firebase'
 import { pushSupported, registerPush } from '../lib/push'
 import { setTheme, THEME_LABEL, THEMES, useTheme } from '../lib/theme'
 import { CORNERS, mainWindow, MIN_OPACITY, setWidget, useWidget, type Corner } from '../lib/widget'
-import { busEnabled } from '../lib/bus'
-import { BusDialog } from './Bus'
 import { FontSizeRow } from './FontSizePicker'
 import { Icon } from './Icon'
 import { LockSettings, useLockLabel } from './LockForm'
@@ -29,7 +27,6 @@ export function MoreMenu() {
   const lockLabel = useLockLabel(uid)
   // 잠금 암호 창은 메뉴를 닫고 띄운다 (메뉴 밖을 누르면 메뉴가 닫히므로)
   const [lockSettings, setLockSettings] = useState(false)
-  const [busSettings, setBusSettings] = useState(false)
   // 일정 푸시: 알림을 아직 허용하지 않았으면 켜는 메뉴를 보여준다
   const [canPush, setCanPush] = useState(false)
   const [pushOn, setPushOn] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted')
@@ -86,20 +83,6 @@ export function MoreMenu() {
               </button>
             </div>
           )}
-          {uid && busEnabled && (
-            <div className="menu-row">
-              <span>버스 즐겨찾기</span>
-              <button
-                className="text-btn"
-                onClick={() => {
-                  setOpen(false)
-                  setBusSettings(true)
-                }}
-              >
-                편집
-              </button>
-            </div>
-          )}
           {canPush && (
             <button className="menu-item" role="menuitem" onClick={enablePush} disabled={pushOn}>
               {pushOn
@@ -116,7 +99,6 @@ export function MoreMenu() {
         </div>
       )}
       {lockSettings && <LockSettings uid={uid} onClose={() => setLockSettings(false)} />}
-      {busSettings && <BusDialog uid={uid} onClose={() => setBusSettings(false)} />}
     </div>
   )
 }

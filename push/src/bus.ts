@@ -14,6 +14,7 @@ const API = 'https://apis.data.go.kr/6260000/BusanBIMS'
 // PC와 휴대폰이 같이 켜져 있어도 같은 정류소는 이 시간 안에 한 번만 부른다 (포털 하루 호출 한도).
 // Worker 인스턴스의 메모리라 늘 맞지는 않지만, 같은 시각 요청은 대개 같은 인스턴스로 간다.
 const CACHE_MS = 30_000
+const DAY_MS = 86_400_000
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -46,6 +47,17 @@ export async function handleBus(req: Request, env: BusEnv): Promise<Response> {
       const byArs = /^\d{5}$/.test(q)
       return json(await cached(`stops:${q}`, () => searchStops(env.BUSAN_BUS_KEY!, byArs ? { arsno: q } : { bstopnm: q })))
     }
+    if (url.pathname === '/bus/lines') {
+      // 버스 번호로 노선 찾기 (부분 일치: 10 → 10, 100, 1001 …). 노선은 잘 바뀌지 않아 오래 둔다.
+      const q = (url.searchParams.get('q') ?? '').trim()
+      if (!q) return json([])
+      return json(await cached(`lines:${q}`, () => searchLines(env.BUSAN_BUS_KEY!, q), DAY_MS))
+    }
+    if (url.pathname === '/bus/route') {
+      const id = url.searchParams.get('lineid') ?? ''
+      if (!/^\d{10}$/.test(id)) return json({ error: 'lineid' }, 400)
+      return json(await cached(`route:${id}`, () => route(env.BUSAN_BUS_KEY!, id), DAY_MS))
+    }
     if (url.pathname === '/bus/arrivals') {
       const id = url.searchParams.get('bstopid') ?? ''
       if (!/^\d{9}$/.test(id)) return json({ error: 'bstopid' }, 400)
@@ -60,17 +72,18 @@ export async function handleBus(req: Request, env: BusEnv): Promise<Response> {
 
 // ── 캐시 ────────────────────────────────────────────────────────────────
 
+// at: 이 시각까지 쓴다
 const cache = new Map<string, { at: number; value: Promise<unknown> }>()
 
-function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+function cached<T>(key: string, load: () => Promise<T>, ttl = CACHE_MS): Promise<T> {
   const now = Date.now()
   const hit = cache.get(key)
-  if (hit && now - hit.at < CACHE_MS) return hit.value as Promise<T>
+  if (hit && now < hit.at) return hit.value as Promise<T>
   const value = load()
-  cache.set(key, { at: now, value })
+  cache.set(key, { at: now + ttl, value })
   // 실패한 결과는 남기지 않는다
   value.catch(() => cache.get(key)?.value === value && cache.delete(key))
-  if (cache.size > 200) for (const [k, v] of cache) if (now - v.at >= CACHE_MS) cache.delete(k)
+  if (cache.size > 200) for (const [k, v] of cache) if (now >= v.at) cache.delete(k)
   return value
 }
 
@@ -108,6 +121,38 @@ export interface Stop {
 async function searchStops(key: string, by: Record<string, string>): Promise<Stop[]> {
   const items = await call('busStopList', { ...by, pageNo: '1', numOfRows: '30' }, key)
   return items.map((i) => ({ bstopid: i.bstopid ?? '', name: i.bstopnm ?? '', arsno: i.arsno ?? '' })).filter((s) => s.bstopid)
+}
+
+/** 노선 */
+export interface Line {
+  lineid: string
+  lineno: string
+  bustype: string
+  start: string // 기점
+  end: string // 종점
+}
+
+async function searchLines(key: string, lineno: string): Promise<Line[]> {
+  const items = await call('busInfo', { lineno }, key)
+  return items
+    .filter((i) => i.lineid)
+    .map((i) => ({ lineid: i.lineid, lineno: i.buslinenum ?? '', bustype: i.bustype ?? '', start: i.startpoint ?? '', end: i.endpoint ?? '' }))
+}
+
+/** 노선이 지나는 정류소 (순서대로). turn: 회차 지점 — 여기까지가 종점 방면, 그 뒤는 기점 방면 */
+export interface RouteStop {
+  bstopid: string
+  name: string
+  arsno: string
+  turn: boolean
+}
+
+async function route(key: string, lineid: string): Promise<RouteStop[]> {
+  const items = await call('busInfoByRouteId', { lineid, numOfRows: '500' }, key)
+  return items
+    .filter((i) => i.nodeid)
+    .sort((a, b) => Number(a.bstopidx) - Number(b.bstopidx))
+    .map((i) => ({ bstopid: i.nodeid, name: i.bstopnm ?? '', arsno: i.arsno ?? '', turn: i.rpoint === '1' }))
 }
 
 /** 다가오는 버스 한 대 */
