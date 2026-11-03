@@ -124,12 +124,33 @@ async function cornerPosition(monitor: Monitor, size: { width: number; height: n
 // 위치 고정이면 지금 창이 있는 모니터의 고정 귀퉁이로 옮긴다.
 async function snap() {
   const win = mainWindow
-  if (!win || !settings.fixed || resizing || dragging) return
+  if (!win || resizing || dragging) return
   const monitor = await currentMonitor()
   if (!monitor) return
+  if (await fitMonitor(win, monitor)) return // 줄였으면 onResized가 다시 부른다
+  if (!settings.fixed) return
   const { x, y } = await cornerPosition(monitor, await win.outerSize())
   const now = await win.outerPosition()
   if (now.x !== x || now.y !== y) await win.setPosition(new PhysicalPosition(x, y))
+}
+
+// 창이 모니터 작업 영역보다 크면 맞게 줄이고, 제목줄이 화면 위로 나갔으면 끌어내린다.
+// (창을 키운 뒤 해상도가 낮은 모니터로 옮기거나 하면 창이 모니터보다 커져서 제목줄 버튼을 누를 수 없었다.) 줄였으면 true
+async function fitMonitor(win: NonNullable<typeof mainWindow>, monitor: Monitor): Promise<boolean> {
+  const { position: area, size: areaSize } = monitor.workArea
+  const margin = Math.round(EDGE_MARGIN * monitor.scaleFactor)
+  const size = await win.outerSize()
+  const maxW = areaSize.width - margin * 2
+  const maxH = areaSize.height - margin * 2
+  if (size.width > maxW || size.height > maxH) {
+    await win.setSize(new PhysicalSize(Math.min(size.width, maxW), Math.min(size.height, maxH)))
+    const pos = await win.outerPosition()
+    await win.setPosition(new PhysicalPosition(Math.max(pos.x, area.x + margin), Math.max(pos.y, area.y + margin)))
+    return true
+  }
+  const pos = await win.outerPosition()
+  if (pos.y < area.y) await win.setPosition(new PhysicalPosition(pos.x, area.y))
+  return false
 }
 
 // 창 크기를 바꾼다. 위치 고정이면 그 귀퉁이에, 아니면 오른쪽 위 모서리를 기준으로(미니모드 버튼이 거기 있다) 줄이고 늘린다.
@@ -146,6 +167,12 @@ async function resizeTo(size: Size) {
     // 60px 미니모드 창이 내용보다 작게 잡혀 원형 아이콘이 잘린 적이 있다.
     const scale = window.devicePixelRatio || monitor?.scaleFactor || (await win.scaleFactor())
     const after = { width: Math.round(size.width * scale), height: Math.round(size.height * scale) }
+    // 모니터보다 크게 잡지 않는다
+    if (monitor) {
+      const margin = Math.round(EDGE_MARGIN * monitor.scaleFactor) * 2
+      after.width = Math.min(after.width, monitor.workArea.size.width - margin)
+      after.height = Math.min(after.height, monitor.workArea.size.height - margin)
+    }
 
     let pos = { x: before.x + beforeSize.width - after.width, y: before.y }
     if (monitor && settings.fixed) pos = await cornerPosition(monitor, after)

@@ -583,7 +583,6 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
   padding: 4px 6px;
 }
 
-
 /* 편집기: 투명한 textarea 뒤에 .mirror가 같은 글자를 그린다. 둘이 한 칸에 겹쳐 같이 늘어나고
    스크롤은 바깥 .editor-body가 한다. 커서 위치가 맞으려면 글자 폭이 같아야 해서 꾸밈은 색과 선으로만 한다. */
 .editor-body {
@@ -821,51 +820,7 @@ html.keyboard .app { padding-bottom: 0; }
 .row-progress.all { background: color-mix(in srgb, var(--ok) 20%, transparent); }
 .row-preview { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* 버스 도착정보 (Bus.tsx): 화면 맨 아래. 정류소별 카드에 노선마다 한 줄: 번호 · 정거장/다음 차 · 남은 시간 */
-.bus-dock {
-  flex: none;
-  max-height: 40%;
-  overflow-y: auto;
-  padding: 6px 10px 8px;
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-}
-.pwa .bus-dock { padding: 8px 12px; }
-.bus-board { display: flex; flex-direction: column; gap: 6px; }
-.bus-bar { display: flex; align-items: center; gap: 6px; padding-left: 4px; color: var(--accent); }
-.bus-bar .icon-btn { width: 26px; height: 26px; }
-.bus-status {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 11px;
-  text-align: left;
-  white-space: nowrap;
-}
-.bus-status.error { color: var(--danger); }
-.bus-status span { display: grid; }
-.spin svg { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.bus-groups { display: flex; flex-direction: column; gap: 6px; }
-.bus-group {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-}
-.bus-stop-head { display: flex; align-items: baseline; gap: 6px; padding: 7px 12px 1px; font-size: 12px; font-weight: 600; }
-.bus-stop-head small { color: var(--muted); font-size: 11px; font-weight: 400; }
-.bus-item { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 12px; text-align: left; }
-.bus-item + .bus-item::before { content: ''; position: absolute; top: 0; left: 12px; right: 0; border-top: 1px solid var(--line); }
-.bus-sub { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
-.bus-main { flex: none; font-size: calc(var(--font-size, 15px) + 1px); font-weight: 700; font-variant-numeric: tabular-nums; }
-.bus-main.near { color: var(--accent); }
-.bus-main.soon { color: var(--danger); }
-.bus-main.none { color: var(--muted); font-size: 13px; font-weight: 500; }
+/* 버스 번호 뱃지: 부산 버스 차체 색 */
 .bus-no {
   flex: none;
   min-width: 46px;
@@ -998,25 +953,13 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .mini-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s; }
 .mini-bar.full i { background: var(--ok); }
 .mini-bus { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
-.mini-bus-row { display: flex; align-items: center; gap: 8px; }
-.mini-bus-row .bus-no { min-width: 38px; padding: 1px 5px; font-size: 11px; }
-.mini-stop { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
-.mini-bus-row .bus-main { font-size: 13px; }
-.mini-bus-row .bus-main.none { font-size: 11px; }
 
 /* 휴대폰 한 화면: 고른 날 제목을 메모 묶음 제목(고정됨·메모)과 같은 크기로 */
 .pwa .day-head .list-head { margin-left: 4px; color: var(--text); font-size: 15px; font-weight: 700; }
 .pwa .day-head { margin-top: 12px; }
-/* PC 버스 한 줄: 정류소 이름은 가운데에 흐리게 */
-.bus-dock .bus-group > .bus-item:first-child { padding-top: 7px; }
-
-/* 버스: 접으면 10분 안에 오는 버스만, "전체 N"으로 편다. 펴면 화면을 조금 더 쓴다 */
-.bus-toggle { flex: none; display: flex; align-items: center; gap: 2px; padding: 2px 4px; color: var(--accent); font-size: 12px; font-weight: 600; }
-.bus-none { margin: 0; padding: 2px 4px 2px 24px; color: var(--muted); font-size: 12px; }
-.bus-dock:has(.bus-board.open) { max-height: 60%; }
 .mini-none { color: var(--muted); font-size: 11px; }
 
-/* PC 위젯 배치: 달력+일정 카드, 메모 카드 목록, 버스 카드 */
+/* PC 위젯 배치: 달력+일정 카드, 메모 카드 목록 (버스는 맨 아래 배너) */
 .cal-section { display: contents; }
 .widget {
   flex: none;
@@ -1033,11 +976,6 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .cal-widget .schedule:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .cal-widget .cal-empty { margin: 2px 4px 4px; }
 .home > .widget + .list-head { margin-top: 10px; }
-.bus-dock.widget { margin: 0 10px 10px; padding: 6px 8px 8px; background: var(--surface); }
-.bus-dock.widget .bus-group { border: 0; border-radius: 0; background: none; }
-.bus-dock.widget .bus-item { padding: 5px 4px; }
-.bus-dock.widget .bus-item + .bus-item::before { left: 4px; }
-.bus-dock.widget .bus-none { padding-left: 4px; }
 /* 미니 위젯을 더 작게 (폭 200) */
 .mini-widget { gap: 5px; padding: 5px 6px 7px 9px; border-radius: 12px; }
 .mini-date { font-size: 12px; }
@@ -1045,28 +983,81 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .mini-progress { gap: 6px; font-size: 10px; }
 .mini-bar { height: 4px; }
 .mini-bus { gap: 3px; padding-top: 5px; }
-.mini-bus-row { gap: 6px; }
-.mini-bus-row .bus-no { min-width: 32px; padding: 0 4px; border-radius: 5px; font-size: 10px; }
-.mini-stop { font-size: 10px; }
-.mini-bus-row .bus-main { font-size: 12px; }
-.mini-bus-row .bus-main.none, .mini-none { font-size: 10px; }
+.mini-none { font-size: 10px; }
 
-/* 버스 한 줄: "106번 7분 후 도착" (분은 굵게, 5분 안은 노랑, 곧 도착은 빨강) */
-.bus-arrive { flex: 1; min-width: 0; overflow: hidden; font-size: calc(var(--font-size, 15px) - 1px); white-space: nowrap; text-overflow: ellipsis; }
-.bus-arrive b { font-weight: 700; font-variant-numeric: tabular-nums; }
-.bus-arrive.near b { color: var(--accent); }
-.bus-arrive.soon b { color: var(--danger); }
-.bus-arrive.none { color: var(--muted); font-size: 13px; }
-/* PC 버스 카드: 정류소 묶음을 카드 안에 선으로 나눈다 */
-.bus-dock.widget .bus-groups { gap: 0; }
-.bus-dock.widget .bus-group + .bus-group { margin-top: 4px; padding-top: 2px; border-top: 1px solid var(--line); }
-.bus-dock.widget .bus-stop-head { padding: 5px 4px 1px; }
-/* 미니 위젯: 묶음도 아주 작게 */
-.mini-bus .bus-groups { gap: 3px; }
-.mini-bus .bus-group { overflow: visible; border: 0; border-radius: 0; background: none; }
-.mini-bus .bus-stop-head { padding: 0; font-size: 10px; }
-.mini-bus .bus-stop-head small { display: none; }
-.mini-bus .bus-item { gap: 6px; padding: 1px 0; }
-.mini-bus .bus-item + .bus-item::before { display: none; }
-.mini-bus .bus-no { min-width: 34px; padding: 0 4px; border-radius: 5px; font-size: 10px; }
-.mini-bus .bus-arrive { font-size: 11px; }
+
+/* ── 간략하고 작게 (PC·휴대폰 공통) ── */
+.list { gap: 5px; padding: 6px 8px 8px; }
+.pwa .list { gap: 6px; padding: 4px 10px 10px; }
+.list-head { margin: 6px 2px 0; font-size: 11px; }
+.home > .widget + .list-head { margin-top: 6px; }
+/* 달력 */
+.cal { padding: 2px 4px 0; border-radius: 10px; }
+.schedule-bar { min-height: 26px; }
+.schedule-bar .icon-btn { width: 26px; height: 26px; }
+.cal-month { font-size: 13px; }
+.cal-week { padding: 0; font-size: 10px; }
+.cal-num { width: 22px; height: 22px; font-size: 11px; }
+.pwa .cal-num { width: 28px; height: 28px; font-size: 13px; }
+.cal-dots, .cal-dots i { height: 3px; }
+.cal-dots i { width: 3px; }
+.cal-handle { height: 10px; }
+.cal-handle i { width: 28px; height: 3px; }
+/* 고른 날 일정: 한 줄 (체크 · 제목 · 시각) */
+.day-head { min-height: 20px; margin-top: 4px; }
+.pwa .day-head { margin-top: 6px; }
+.pwa .day-head .list-head, .note-group .list-head { font-size: 13px; }
+.day-head .text-btn { font-size: 11px; }
+.schedule { gap: 6px; padding: 3px 4px 3px 8px; border-radius: 8px; }
+.schedule-main { flex-direction: row; align-items: center; gap: 6px; }
+.schedule-title { flex: 1; min-width: 0; font-size: calc(var(--font-size, 15px) - 2px); font-weight: 500; }
+.schedule-when { flex: none; font-size: 11px; }
+.schedule .check { width: 14px; height: 14px; }
+.schedule .icon-btn { width: 22px; height: 22px; }
+.cal-widget .schedule { padding: 2px 2px 2px 4px; }
+.cal-empty { margin: 2px 4px; font-size: 11px; }
+.widget { padding: 4px 6px 6px; border-radius: 12px; }
+/* 메모 */
+.card { padding: 5px 8px; border-radius: 8px; }
+.card-body { -webkit-line-clamp: 1; font-size: calc(var(--font-size, 15px) - 4px); }
+.card-date { font-size: 10px; }
+.rows { border-radius: 10px; }
+.row { gap: 0; padding: 6px 12px; }
+.row-sub { gap: 6px; font-size: calc(var(--font-size, 15px) - 3px); }
+.note-group { gap: 4px; }
+.note-group .list-head { margin: 2px 4px 0; }
+/* 하단 */
+.bottombar { gap: 6px; min-height: 40px; padding: 3px 8px; }
+.bottombar .search { padding: 5px 10px; }
+.statusbar { padding: 2px 10px; font-size: 10px; }
+.pwa .statusbar { padding: 1px 12px 4px; font-size: 11px; }
+
+/* 버스 배너 (Bus.tsx): 맨 아래 얇은 띠. 정류소마다 한 줄 "부산시청  1001번 곧 도착 · 106번 8분 후 도착". 누르면 전부 펼친다 */
+.bus-banner {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.bus-banner > svg { flex: none; margin-top: 2px; color: var(--accent); }
+.bus-banner > .cal-caret { flex: none; margin-top: 3px; }
+.bus-banner.open { max-height: 40%; overflow-y: auto; }
+.bus-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bus-line { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bus-banner.open .bus-line { white-space: normal; }
+.bus-line-stop { margin-right: 6px; color: var(--muted); }
+.bus-line-item b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.bus-line-item.near b { color: var(--accent); }
+.bus-line-item.soon b { color: var(--danger); }
+.bus-line-item.none { color: var(--muted); }
+.bus-line-item + .bus-line-item::before { content: '·'; margin: 0 5px; color: var(--muted); }
+.bus-none { color: var(--muted); }
+.mini-bus .bus-line { font-size: 10px; }
+.mini-bus .bus-line-stop { display: block; margin: 0; font-size: 10px; }
+.bus-line-item { white-space: nowrap; }

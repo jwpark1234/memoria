@@ -17,7 +17,6 @@ import {
 import { useOverlayClose } from '../lib/overlay'
 import { Icon } from './Icon'
 
-const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 
 // 노선 번호 색: 부산 버스 차체 색을 따른다
 function lineKind(bustype = '') {
@@ -46,13 +45,13 @@ export function eta(a: Arrival | undefined): { main: string; sub: string; tone: 
 
 type Entry = { f: BusFavorite; a: Arrival | undefined; e: ReturnType<typeof eta>; min: number | null }
 
-/** 정류소별로 묶는다. 묶음 순서는 들어온 순서 (near는 이미 남은 시간순이라 곧 오는 버스가 있는 정류소가 위로) */
+/** 정류소별로 묶는다. 묶음 순서는 들어온 순서 (near는 남은 시간순이라 곧 오는 버스가 있는 정류소가 앞으로) */
 function byStop(entries: Entry[]) {
-  const groups: { bstopid: string; stop: string; arsno: string; items: Entry[] }[] = []
+  const groups: { bstopid: string; stop: string; items: Entry[] }[] = []
   for (const x of entries) {
     const g = groups.find((y) => y.bstopid === x.f.bstopid)
     if (g) g.items.push(x)
-    else groups.push({ bstopid: x.f.bstopid, stop: x.f.stop, arsno: x.f.arsno, items: [x] })
+    else groups.push({ bstopid: x.f.bstopid, stop: x.f.stop, items: [x] })
   }
   return groups
 }
@@ -60,44 +59,29 @@ function byStop(entries: Entry[]) {
 /** "7분 후 도착" / "곧 도착" / "운행대기" — 강조할 부분(strong)과 나머지 */
 function arrivalWords({ a, min }: Entry): { strong: string; rest: string } {
   const first = a?.buses[0]
-  if (first && min !== null) return (min <= 1 || first.stops === 1) ? { strong: '곧 도착', rest: '' } : { strong: `${min}분`, rest: ' 후 도착' }
-  return { strong: '', rest: a?.status || '도착 정보 없음' }
+  if (first && min !== null) return min <= 1 || first.stops === 1 ? { strong: '곧 도착', rest: '' } : { strong: `${min}분`, rest: ' 후 도착' }
+  return { strong: '', rest: a?.status || '정보 없음' }
 }
 
-/** 정류소별 묶음: 정류소 이름 아래에 "106번 7분 후 도착" 한 줄씩 */
-export function ArrivalGroups({ entries, onTap }: { entries: Entry[]; onTap?: () => void }) {
-  return (
-    <div className="bus-groups">
-      {byStop(entries).map((g) => (
-        <div key={g.bstopid} className="bus-group">
-          <div className="bus-stop-head">
-            <span>{g.stop}</span>
-            <small>{g.arsno}</small>
-          </div>
-          {g.items.map((x) => {
-            const w = arrivalWords(x)
-            return (
-              <button key={x.f.lineid} className="bus-item" onClick={onTap} title={x.e.sub || '새로 고침'}>
-                <LineNo no={`${x.f.lineno}번`} type={x.a?.bustype} />
-                <span className={`bus-arrive ${x.e.tone}`}>
-                  {w.strong && <b>{w.strong}</b>}
-                  {w.rest}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ))}
+/** 정류소마다 한 줄: "부산시청  1001번 곧 도착 · 106번 8분 후 도착" */
+export function StopLines({ entries }: { entries: Entry[] }) {
+  return byStop(entries).map((g) => (
+    <div key={g.bstopid} className="bus-line">
+      <span className="bus-line-stop">{g.stop}</span>
+      {g.items.map((x) => {
+        const w = arrivalWords(x)
+        return (
+          <span key={x.f.lineid} className={`bus-line-item ${x.e.tone}`}>
+            {x.f.lineno}번 {w.strong && <b>{w.strong}</b>}
+            {w.rest}
+          </span>
+        )
+      })}
     </div>
-  )
+  ))
 }
 
-interface BoardProps {
-  favorites: BusFavorite[]
-  onEdit: () => void
-}
-
-/** 이 시간(분) 안에 오는 버스만 접힌 화면에 보인다 */
+/** 이 시간(분) 안에 오는 버스만 보인다 (배너를 펴면 전부) */
 export const NEAR_MIN = 10
 
 /** 즐겨찾기마다 도착정보를 붙인다. near: NEAR_MIN 안에 오는 것만 남은 시간순으로 */
@@ -111,44 +95,40 @@ export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arriv
 }
 
 /**
- * 화면 맨 아래의 버스 도착정보. 접어 두면 10분 안에 오는 버스만, 펴면 즐겨찾기 전부. 둘 다 정류소별로 묶는다.
- * 보이는 동안 30초마다 새로 받고, 누르면 바로 새로 받는다.
+ * 화면 맨 아래의 버스 배너. 일정·메모가 주인공이라 버스는 한두 줄로만: 10분 안에 오는 버스를 정류소별로.
+ * 누르면 즐겨찾기 전부를 펴고 접는다 (멈춰 있었으면 새로 받는다). 편집은 상단 버스 버튼에서.
  */
-export function BusBoard({ favorites, onEdit }: BoardProps) {
-  const { byStop: arrivals, at, error, loading, paused, refresh } = useArrivals(favorites)
+export function BusBanner({ favorites }: { favorites: BusFavorite[] }) {
+  const { byStop: arrivals, at, error, paused, refresh } = useArrivals(favorites)
   const [open, setOpen] = useState(false)
-  const status = paused ? '멈춤 · 눌러서 새로 고침' : error ? '받지 못함' : at ? `${timeFmt.format(at)} 기준` : '불러오는 중…'
-  const waiting = !at && !error
   const { all, near } = withEta(favorites, arrivals)
+  const shown = open ? all : near
 
   return (
-    <section className={`bus-board${open ? ' open' : ''}`}>
-      <div className="bus-bar">
-        <Icon name="bus" size={14} />
-        <button className={`bus-status${error ? ' error' : ''}`} onClick={refresh} title={error ?? '새로 고침'}>
-          {status}
-          <span className={loading ? 'spin' : ''}>
-            <Icon name="refresh" size={11} />
-          </span>
-        </button>
-        <button className="bus-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {open ? '접기' : `전체 ${favorites.length}`}
-          <span className={`cal-caret${open ? '' : ' up'}`}>
-            <Icon name="forward" size={11} />
-          </span>
-        </button>
-        <button className="icon-btn" onClick={onEdit} title="버스 즐겨찾기 편집">
-          <Icon name="pencil" size={14} />
-        </button>
+    <div
+      className={`bus-banner${open ? ' open' : ''}`}
+      role="button"
+      aria-expanded={open}
+      title={open ? '접기' : '전체 보기'}
+      onClick={() => {
+        setOpen(!open)
+        if (paused || error) refresh()
+      }}
+    >
+      <Icon name="bus" size={13} />
+      <div className="bus-lines">
+        {!at ? (
+          <span className="bus-none">{error ? '버스 정보를 받지 못함' : '…'}</span>
+        ) : shown.length ? (
+          <StopLines entries={shown} />
+        ) : (
+          <span className="bus-none">{NEAR_MIN}분 내 도착 없음</span>
+        )}
       </div>
-      {waiting ? null : open ? (
-        <ArrivalGroups entries={all} onTap={refresh} />
-      ) : near.length ? (
-        <ArrivalGroups entries={near} onTap={refresh} />
-      ) : (
-        <p className="bus-none">{NEAR_MIN}분 안에 오는 버스가 없어요</p>
-      )}
-    </section>
+      <span className={`cal-caret${open ? '' : ' up'}`}>
+        <Icon name="forward" size={10} />
+      </span>
+    </div>
   )
 }
 

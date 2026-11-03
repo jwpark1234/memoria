@@ -1,6 +1,6 @@
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { useCallback, useEffect, useState } from 'react'
-import { BusBoard, BusSheet } from './components/Bus'
+import { BusBanner, BusSheet } from './components/Bus'
 import { Icon } from './components/Icon'
 import { LockedNote } from './components/LockForm'
 import { Login } from './components/Login'
@@ -131,11 +131,7 @@ function Notes({ user }: { user: User }) {
 
   const statusBar = (
     <StatusBar status={status}>
-      {current ? (
-        <span>{formatDate(current.updatedAt)} 수정</span>
-      ) : (
-        <span className="email">{user.email}</span>
-      )}
+      {current && <span>{formatDate(current.updatedAt)} 수정</span>}
     </StatusBar>
   )
   const busButton = busEnabled && !current && (
@@ -186,11 +182,8 @@ function Notes({ user }: { user: User }) {
       <NoteList notes={notes} schedules={schedules} loaded={loaded} query={query} onOpen={setOpenId} rows={pwa} />
     </div>
   )
-  const busDock = !current && !filtering && busFavorites.length > 0 && (
-    <div className={`bus-dock${pwa ? '' : ' widget'}`}>
-      <BusBoard favorites={busFavorites} onEdit={() => setBusSheet(true)} />
-    </div>
-  )
+  // 버스는 부가 정보라 맨 아래 얇은 배너로
+  const busDock = !current && !filtering && busFavorites.length > 0 && <BusBanner favorites={busFavorites} />
   const dialogs = (
     <>
       {addingSchedule && (

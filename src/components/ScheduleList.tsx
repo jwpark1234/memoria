@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { noteTitle, removeItem, setItemDone } from '../lib/markup'
 import { updateLockedNote, updateNote, type Note } from '../lib/notes'
-import { deleteSchedule, formatWhen, updateSchedule, type Schedule } from '../lib/schedules'
+import { deleteSchedule, updateSchedule, type Schedule } from '../lib/schedules'
 import { Icon } from './Icon'
 import { ScheduleCalendar } from './ScheduleCalendar'
 import { ScheduleDialog } from './ScheduleDialog'
@@ -17,6 +17,8 @@ interface Props {
   onAdd?: () => void
   defaultExpanded?: boolean
 }
+
+const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 
 /** 일정 달력과 고른 날의 일정. 부르는 쪽이 .list로 감싼다. */
 export function ScheduleList({ uid, schedules, notes, onOpenNote, day, onDay, onAdd, defaultExpanded }: Props) {
@@ -51,11 +53,11 @@ export function ScheduleList({ uid, schedules, notes, onOpenNote, day, onDay, on
         <button className={`check${s.done ? ' on' : ''}`} onClick={() => toggle(s)} title={s.done ? '다시 하기' : '끝냄'} />
         <button className="schedule-main" onClick={() => setEditing(s)}>
           <span className="schedule-title">{s.title || '일정'}</span>
-          <span className={`schedule-when${!s.done && s.at < now ? ' late' : ''}`}>{formatWhen(s.at)}</span>
+          <span className={`schedule-when${!s.done && s.at < now ? ' late' : ''}`}>{timeFmt.format(s.at)}</span>
         </button>
         {note && (
           <button className="icon-btn" onClick={() => onOpenNote(note.id)} title={`메모 열기: ${noteTitle(note) || '빈 메모'}`}>
-            <Icon name="note" />
+            <Icon name="note" size={14} />
           </button>
         )}
       </div>
