@@ -2163,6 +2163,8 @@ name = "memoria"
 version = "0.1.15"
 dependencies = [
  "base64 0.22.1",
+ "core-foundation 0.10.1",
+ "core-graphics",
  "rand 0.9.5",
  "reqwest 0.12.28",
  "serde",

@@ -49,14 +49,15 @@ type Entry = { f: BusFavorite; a: Arrival | undefined; e: ReturnType<typeof eta>
 // 남은 시간순. 도착 정보가 없는 버스는 뒤로
 const soonest = (x: Entry, y: Entry) => (x.min ?? Infinity) - (y.min ?? Infinity)
 
-/** 정류소별로 묶는다. 묶음 안은 빨리 오는 버스부터, 묶음끼리는 가장 빨리 오는 버스가 있는 정류소부터 */
+/** 정류소별로 묶는다. 정류소 순서는 즐겨찾기에 넣은 순서로 고정(도착 시간에 따라 줄이 뒤바뀌지 않게), 묶음 안은 빨리 오는 버스부터 */
 function byStop(entries: Entry[]) {
   const groups: { bstopid: string; stop: string; items: Entry[] }[] = []
-  for (const x of [...entries].sort(soonest)) {
+  for (const x of entries) {
     const g = groups.find((y) => y.bstopid === x.f.bstopid)
     if (g) g.items.push(x)
     else groups.push({ bstopid: x.f.bstopid, stop: x.f.stop, items: [x] })
   }
+  for (const g of groups) g.items.sort(soonest)
   return groups
 }
 
@@ -88,7 +89,7 @@ function StopGroup({ g }: { g: ReturnType<typeof byStop>[number] }) {
 
 /**
  * 흐르는 글자: 즐겨찾기한 정류소마다 한 줄씩(정류소 수만큼 줄이 생긴다), 줄마다 정류소 이름 뒤에 빨리 오는 버스부터.
- * 가장 빨리 오는 버스가 있는 정류소가 맨 위. PC·휴대폰·미니 위젯 공통.
+ * 정류소 순서는 즐겨찾기에 넣은 순서로 고정. PC·휴대폰·미니 위젯 공통.
  */
 export function BusTicker({ entries }: { entries: Entry[] }) {
   return byStop(entries).map((g) => (
