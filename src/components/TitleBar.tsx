@@ -44,7 +44,7 @@ export function TitleBar({ children }: { children?: ReactNode }) {
           <>
             <MoreMenu />
             {/* 숨기기·종료는 트레이 아이콘에서 한다 */}
-            <button className="icon-btn" onClick={() => setWidget({ mini: true })} title="미니모드">
+            <button className="icon-btn" onClick={() => setWidget({ mini: true })} title="미니모드 (Esc)">
               <Icon name="shrink" />
             </button>
           </>

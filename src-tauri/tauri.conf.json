@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Memoria",
-        "width": 400,
-        "height": 600,
-        "minWidth": 260,
+        "width": 464,
+        "height": 1100,
+        "minWidth": 464,
         "minHeight": 220,
         "decorations": false,
         "alwaysOnTop": true,

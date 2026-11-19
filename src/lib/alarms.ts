@@ -1,8 +1,6 @@
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { useEffect, useRef, useState } from 'react'
 import { inTauri } from './firebase'
-import { noteTitle } from './markup'
-import type { Note } from './notes'
 import { formatWhen, updateSchedule, type Schedule } from './schedules'
 
 // 일정 알림. 앱이 떠 있는 동안 다음 일정 시각에 맞춰 깨어나 OS 알림을 띄운다.
@@ -37,7 +35,7 @@ async function notify(title: string, body: string, tag: string) {
 }
 
 /** 메인 창(PWA는 앱)에서 한 번만 쓴다. 메모 창이 따로 알리면 겹친다. */
-export function useAlarms(uid: string, schedules: Schedule[], notes: Note[]) {
+export function useAlarms(uid: string, schedules: Schedule[]) {
   const [tick, setTick] = useState(0)
   // 서버에 notified가 반영되기 전에 같은 일정을 또 알리지 않게 기억한다 (일정 id → 알린 시각)
   const fired = useRef(new Map<string, number>())
@@ -52,9 +50,7 @@ export function useAlarms(uid: string, schedules: Schedule[], notes: Note[]) {
         continue
       }
       fired.current.set(s.id, s.at)
-      const note = s.noteId ? notes.find((n) => n.id === s.noteId) : undefined
-      const where = note && noteTitle(note)
-      notify(s.title || '일정', [formatWhen(s.at), where].filter(Boolean).join(' · '), s.id).catch((e) =>
+      notify(s.title || '일정', formatWhen(s.at), s.id).catch((e) =>
         console.error('[alarms]', e),
       )
       updateSchedule(uid, s.id, { notified: true })
@@ -62,7 +58,7 @@ export function useAlarms(uid: string, schedules: Schedule[], notes: Note[]) {
     if (next === Infinity) return
     const timer = window.setTimeout(() => setTick((t) => t + 1), Math.min(next - now, MAX_WAIT))
     return () => window.clearTimeout(timer)
-  }, [uid, schedules, notes, tick])
+  }, [uid, schedules, tick])
 
   // 휴대폰에서 앱으로 돌아오면 그동안 지난 일정을 바로 알린다
   useEffect(() => {

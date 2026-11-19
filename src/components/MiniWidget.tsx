@@ -1,32 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import { useArrivals, type BusFavorite } from '../lib/bus'
-import { startOfDay, type Schedule } from '../lib/schedules'
+import { formatWhen, type Schedule } from '../lib/schedules'
+import type { Todo } from '../lib/todos'
 import { MINI_SIZE, setMiniSize, setWidget } from '../lib/widget'
-import { NEAR_MIN, StopLines, withEta } from './Bus'
+import { BusTicker, withEta } from './Bus'
 import { Icon } from './Icon'
 
 // 미니 위젯 창 폭 (논리 px). 높이는 내용에 맞춘다.
 const WIDTH = 200
 const weekdayFmt = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' })
-/** 11월 2일 (월) */
+/** 11/2 월 */
 const formatDay = (ms: number) => {
   const d = new Date(ms)
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekdayFmt.format(d)})`
+  return `${d.getMonth() + 1}/${d.getDate()} ${weekdayFmt.format(d)}`
 }
 
 interface Props {
   schedules: Schedule[]
+  todos: Todo[]
   favorites: BusFavorite[]
+  // 할일 개수를 누르면: 펼쳐서 할일 페이지로
+  onOpenTodos: () => void
 }
 
 /**
- * PC 미니모드: 펼치기 버튼, 오늘 날짜, 오늘 일정을 끝낸 만큼 차는 막대, 즐겨찾기 버스 도착정보.
+ * PC 미니모드: 흘끗 보고 지금 신경 쓸 게 있는지만. 시간에 민감한 것 위주로 작게.
+ * 첫 줄 날짜 · 진행 중 할일 개수 · 펼치기, 둘째 줄 다음 일정(늘 한 줄), 그 아래 즐겨찾기 정류소마다 흐르는 버스 줄.
  * 미니모드가 아닐 때도 보이지 않게 그려 두고 높이를 재서 창 크기(lib/widget.ts)를 맞춘다.
  */
-export function MiniWidget({ schedules, favorites }: Props) {
+export function MiniWidget({ schedules, todos, favorites, onOpenTodos }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const { byStop: arrivals, at } = useArrivals(favorites, true)
-  // 자정이 지나면 날짜와 오늘 일정을 바꾼다
+  // 1분마다: 자정이 지나면 날짜를, 일정 시각이 지나면 다음 일정을 바꾼다
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000)
@@ -53,30 +58,43 @@ export function MiniWidget({ schedules, favorites }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  const today = startOfDay(now).getTime()
-  const todays = schedules.filter((s) => s.at >= today && s.at < today + 86_400_000)
-  const done = todays.filter((s) => s.done).length
-  const pct = todays.length ? Math.round((done / todays.length) * 100) : 0
-  const { near } = withEta(favorites, arrivals)
+  // 다음 일정: 지금 이후의 끝내지 않은 일정 중 가장 이른 것 (schedules는 시각순)
+  const next = schedules.find((s) => !s.done && s.at >= now)
+  const left = todos.filter((t) => t.doneAt === null).length
 
   return (
     <div className="mini-widget" ref={ref} style={{ width: WIDTH }}>
       <div className="mini-head">
         <span className="mini-date">{formatDay(now)}</span>
+        <button
+          className="mini-todos"
+          onClick={() => {
+            onOpenTodos()
+            setWidget({ mini: false })
+          }}
+          title="진행 중인 할일 (누르면 할일 페이지)"
+        >
+          할일 <b>{left}</b>
+        </button>
         <button className="icon-btn" onClick={() => setWidget({ mini: false })} title="펼치기">
-          <Icon name="expand" size={13} />
+          <Icon name="expand" size={11} />
         </button>
       </div>
-      <div className="mini-progress" title={todays.length ? `오늘 일정 ${todays.length}개 중 ${done}개 끝냄` : undefined}>
-        <div className={`mini-bar${todays.length && done === todays.length ? ' full' : ''}`}>
-          <i style={{ width: `${pct}%` }} />
-        </div>
-        <span>{todays.length ? `${done}/${todays.length}` : '일정 없음'}</span>
+      <div className={`mini-next${next ? '' : ' none'}`} title={next ? `${formatWhen(next.at)} ${next.title}` : undefined}>
+        <Icon name="calendar" size={11} />
+        {next ? (
+          <>
+            <span className="mini-next-when">{formatWhen(next.at)}</span>
+            <span className="mini-next-title">{next.title || '일정'}</span>
+          </>
+        ) : (
+          <span>다음 일정 없음</span>
+        )}
       </div>
-      {/* 버스: 10분 안에 오는 것만, 정류소별로 "106번 7분 후 도착" */}
+      {/* 버스: 즐겨찾기한 정류소마다 흐르는 한 줄 */}
       {favorites.length > 0 && at > 0 && (
         <div className="mini-bus">
-          {near.length ? <StopLines entries={near} /> : <span className="mini-none">{NEAR_MIN}분 내 도착 없음</span>}
+          <BusTicker entries={withEta(favorites, arrivals)} />
         </div>
       )}
     </div>

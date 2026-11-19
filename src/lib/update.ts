@@ -11,7 +11,8 @@ export interface UpdateInfo {
   installing: boolean
 }
 
-const CHECK_INTERVAL = 60 * 60 * 1000 // 1시간
+// 새 버전 확인 주기. 확인은 GitHub의 작은 파일(latest.json)이나 서비스워커 하나를 받아 보는 것이라 가볍다.
+const CHECK_INTERVAL = 10 * 60 * 1000 // 10분
 
 let info: UpdateInfo = { available: false, version: '', installing: false }
 let install: (() => Promise<void>) | null = null
@@ -78,6 +79,13 @@ export function initUpdate() {
     const recheck = () => checkDesktop().catch((e) => console.warn('[update]', e)) // 오프라인이면 다음 기회에
     recheck()
     setInterval(recheck, CHECK_INTERVAL)
+    // 트레이·미니모드에서 다시 펼치거나 다른 창에서 돌아오면 바로 확인한다 (마지막 확인 뒤 1분이 지났으면)
+    let last = Date.now()
+    window.addEventListener('focus', () => {
+      if (Date.now() - last < 60_000) return
+      last = Date.now()
+      recheck()
+    })
   } else {
     initPwa()
   }

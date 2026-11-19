@@ -6,7 +6,7 @@ import { createSchedule, nextHour, toLocalInput, updateSchedule, type Schedule }
 import { ConfirmDialog } from './ConfirmDialog'
 
 // at: 기본 시각 (없으면 다음 정각)
-export type ScheduleInit = Pick<Schedule, 'title' | 'noteId' | 'item'> & { at?: number }
+export type ScheduleInit = Pick<Schedule, 'title'> & { at?: number }
 
 interface Props {
   uid: string
@@ -14,21 +14,19 @@ interface Props {
   schedule?: Schedule
   init?: ScheduleInit
   onCreated?: (id: string, at: number) => void
-  // 지우기는 부르는 쪽이 한다. withItem: 걸린 체크리스트 항목도 지운다.
-  onDelete?: (s: Schedule, withItem: boolean) => void
+  // 지우기는 부르는 쪽이 한다
+  onDelete?: (s: Schedule) => void
   onClose: () => void
 }
 
 /** 일정 등록·수정 창 */
 export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClose }: Props) {
-  const base = schedule ?? { title: '', noteId: null, item: null, ...init }
+  const base = schedule ?? { title: '', ...init }
   const [title, setTitle] = useState(base.title)
   const [when, setWhen] = useState(toLocalInput(schedule?.at ?? init?.at ?? nextHour()))
   const [confirming, setConfirming] = useState(false)
   const overlay = useOverlayClose(onClose)
   const at = new Date(when).getTime()
-  // 체크리스트 항목에 걸린 일정의 이름은 항목 글자를 따른다 (메모에서 고친다)
-  const fromItem = base.item !== null
 
   const save = () => {
     if (Number.isNaN(at)) return
@@ -44,31 +42,20 @@ export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClo
         ...(at !== schedule.at && { notified: false, pushed: false }),
       })
     } else {
-      onCreated?.(createSchedule(uid, { title: title.trim(), at, noteId: base.noteId, item: base.item }), at)
+      onCreated?.(createSchedule(uid, { title: title.trim(), at }), at)
     }
     onClose()
   }
 
   if (confirming && schedule) {
-    const remove = (withItem: boolean) => {
-      onDelete?.(schedule, withItem)
-      onClose()
-    }
-    return schedule.item !== null ? (
-      <ConfirmDialog
-        message="일정을 삭제할까요?"
-        detail={`체크리스트 항목 '${schedule.item}'도 같이 지울 수 있습니다.`}
-        altLabel="일정만 삭제"
-        onAlt={() => remove(false)}
-        confirmLabel="항목도 삭제"
-        onConfirm={() => remove(true)}
-        onCancel={() => setConfirming(false)}
-      />
-    ) : (
+    return (
       <ConfirmDialog
         message="일정을 삭제할까요?"
         confirmLabel="삭제"
-        onConfirm={() => remove(false)}
+        onConfirm={() => {
+          onDelete?.(schedule)
+          onClose()
+        }}
         onCancel={() => setConfirming(false)}
       />
     )
@@ -89,14 +76,8 @@ export function ScheduleDialog({ uid, schedule, init, onCreated, onDelete, onClo
       >
         <p>{schedule ? '일정 수정' : '일정 등록'}</p>
         <label className="field">
-          <span>{fromItem ? '체크리스트 항목' : '내용'}</span>
-          <input
-            autoFocus={!fromItem}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="일정"
-            readOnly={fromItem}
-          />
+          <span>내용</span>
+          <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="일정" />
         </label>
         <label className="field">
           <span>알림 시각</span>

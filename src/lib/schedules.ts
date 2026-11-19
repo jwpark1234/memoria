@@ -12,17 +12,14 @@ import {
 import { useEffect, useState } from 'react'
 import { db } from './firebase'
 
-// 일정. 직접 등록하거나, 메모의 체크리스트 항목에 걸어 둔다.
-// 항목에 걸린 일정은 항목 글자(item)로 메모 속 줄을 찾는다. 편집기가 항목을 고치면 같이 고친다 (NoteEditor).
+// 일정: 이름과 알림 시각. (예전에는 메모의 체크리스트 항목에 걸 수 있었다. 그때 저장된 noteId·item은 읽지 않는다)
 export interface Schedule {
   id: string
   title: string
   at: number // 알림 시각 (ms)
-  done: boolean // 끝냄. 알리지 않는다. 걸린 체크리스트 항목의 체크와 같다.
+  done: boolean // 끝냄. 알리지 않는다.
   notified: boolean // 이미 알렸음. 다른 기기가 또 알리지 않게 서버에 둔다.
   pushed?: boolean // 푸시 Worker(push/)가 휴대폰에 보냈음. 앱은 읽지 않고, 시각을 옮길 때만 되돌린다.
-  noteId: string | null // 걸린 메모
-  item: string | null // 걸린 체크리스트 항목의 글자 (noteId 메모 안)
 }
 
 type SchedulePatch = Partial<Omit<Schedule, 'id'>>
@@ -53,8 +50,6 @@ export function useSchedules(uid: string) {
             at: (data.at as Timestamp | null)?.toMillis() ?? 0,
             done: !!data.done,
             notified: !!data.notified,
-            noteId: data.noteId ?? null,
-            item: data.item ?? null,
           } satisfies Schedule
         })
         list.sort((a, b) => a.at - b.at)
@@ -86,9 +81,6 @@ export function updateSchedule(uid: string, id: string, patch: SchedulePatch) {
 export function deleteSchedule(uid: string, id: string) {
   updateDoc(doc(schedulesCol(uid), id), { deleted: true, updatedAt: serverTimestamp() }).catch(report)
 }
-
-/** 메모·항목과의 연결만 끊고 일정은 남긴다 */
-export const unlinkSchedule = (uid: string, id: string) => updateSchedule(uid, id, { noteId: null, item: null })
 
 const timeFmt = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' })
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' })

@@ -34,6 +34,10 @@ interface Props {
   // 처음에 한 달을 펴 둘지 (PC는 펴고, 휴대폰은 일주일로 접어 둔다). 손잡이로 접고 펴고, 기기마다 기억한다.
   defaultExpanded?: boolean
   collapsible?: boolean
+  // 메인 화면: 달력 칸만 그린다 (고른 날의 일정 목록은 부르는 쪽이)
+  gridOnly?: boolean
+  // 휴대폰 홈: 고른 날이 든 일주일 한 줄만 (접고 펴기 없음)
+  week?: boolean
 }
 
 // 이만큼(px) 넘게 옆으로 밀면 넘긴다
@@ -51,9 +55,11 @@ export function ScheduleCalendar({
   onAdd,
   defaultExpanded = false,
   collapsible = true,
+  gridOnly = false,
+  week = false,
 }: Props) {
   const [open, setExpanded] = useState(() => loadExpanded(defaultExpanded))
-  const expanded = !collapsible || open
+  const expanded = !week && (!collapsible || open)
   // 보여주는 기간 안의 아무 날 (주 보기면 그 주, 달 보기면 그 달)
   const [anchor, setAnchor] = useState(selected)
   // 넘긴 방향: 새 기간이 그쪽에서 밀려 들어온다
@@ -181,17 +187,21 @@ export function ScheduleCalendar({
           </button>
         )}
       </div>
-      <div className="day-head">
-        <h3 className="list-head">{dayFmt.format(selected)}</h3>
-        {onAdd && (
-          <button className="text-btn" onClick={onAdd} title="이 날에 일정 추가">
-            <Icon name="plus" size={13} />
-            일정
-          </button>
-        )}
-      </div>
-      {dayList.map(row)}
-      {dayList.length === 0 && <p className="cal-empty">일정 없음</p>}
+      {!gridOnly && (
+        <>
+          <div className="day-head">
+            <h3 className="list-head">{dayFmt.format(selected)}</h3>
+            {onAdd && (
+              <button className="text-btn" onClick={onAdd} title="이 날에 일정 추가">
+                <Icon name="plus" size={13} />
+                일정
+              </button>
+            )}
+          </div>
+          {dayList.map(row)}
+          {dayList.length === 0 && <p className="cal-empty">일정 없음</p>}
+        </>
+      )}
     </>
   )
 }

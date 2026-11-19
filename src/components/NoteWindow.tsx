@@ -5,7 +5,6 @@ import { auth } from '../lib/firebase'
 import { closeNoteWindow, noteWindowId, trackNoteWindow } from '../lib/noteWindows'
 import { useDecrypted } from '../lib/lock'
 import { useNotes } from '../lib/notes'
-import { useSchedules } from '../lib/schedules'
 import { LockedNote } from './LockForm'
 import { NoteEditor } from './NoteEditor'
 
@@ -27,7 +26,6 @@ export function NoteWindow() {
 function Body({ uid, id }: { uid: string; id: string }) {
   const { notes: stored, fromServer } = useNotes(uid)
   const notes = useDecrypted(stored)
-  const schedules = useSchedules(uid)
   const note = notes.find((n) => n.id === id)
 
   useEffect(() => {
@@ -42,7 +40,6 @@ function Body({ uid, id }: { uid: string; id: string }) {
       key={note.id}
       uid={uid}
       note={note}
-      schedules={schedules.filter((s) => s.noteId === note.id)}
       onBack={closeNoteWindow}
       onTyping={noop}
       standalone

@@ -1,9 +1,8 @@
-import { Fragment, type ReactNode } from 'react'
-import { CHECK, LINK } from '../lib/markup'
-import { Icon } from './Icon'
+import type { ReactNode } from 'react'
+import { LINK } from '../lib/markup'
 
 // 링크는 글자 폭을 바꾸지 않게 색과 밑줄로만 표시한다 (편집기에서 textarea와 위치가 맞아야 한다)
-function inline(text: string): ReactNode[] {
+export function MarkupText({ text }: { text: string }) {
   const out: ReactNode[] = []
   let last = 0
   for (const m of text.matchAll(LINK)) {
@@ -17,45 +16,4 @@ function inline(text: string): ReactNode[] {
   }
   out.push(text.slice(last))
   return out
-}
-
-function line(text: string, index: number, editor: boolean): ReactNode {
-  const m = CHECK.exec(text)
-  if (!m) return inline(text)
-  const done = m[2] !== ' '
-  return (
-    <>
-      {m[1]}
-      {/* 편집기에서는 "- [ ]" 글자를 투명하게 두고 그 자리에 상자를 그린다. 누른 상자를 찾을 수 있게 줄 번호를 단다 */}
-      <span className={`box${done ? ' done' : ''}`} data-line={index}>
-        {editor ? `- [${m[2]}]` : done ? '☑' : '☐'}
-      </span>{' '}
-      <span className={done ? 'done' : undefined}>{inline(text.slice(m[0].length))}</span>
-    </>
-  )
-}
-
-interface Props {
-  text: string
-  // 편집기 뒤에 겹쳐 그릴 때: 표기 글자를 지우지 않아 글자 위치가 textarea와 똑같다
-  editor?: boolean
-  // 일정이 걸린 줄 번호 → 줄 끝에 붙일 일정 시각
-  alarms?: Map<number, string>
-  // 일정이 걸린 줄 번호 → 줄 끝에 작은 일정 아이콘 (목록 미리보기)
-  scheduled?: Set<number>
-}
-
-export function MarkupText({ text, editor = false, alarms, scheduled }: Props) {
-  return text.split('\n').map((l, i) => (
-    <Fragment key={i}>
-      {i > 0 && '\n'}
-      {line(l, i, editor)}
-      {alarms?.has(i) && <span className="alarm" data-label={alarms.get(i)} />}
-      {scheduled?.has(i) && (
-        <span className="scheduled" title="일정">
-          <Icon name="calendar" size={10} />
-        </span>
-      )}
-    </Fragment>
-  ))
 }

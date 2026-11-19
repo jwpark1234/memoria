@@ -213,11 +213,6 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
 }
 .segment button { padding: 2px 10px; border-radius: 5px; color: var(--muted); }
 .segment button.on { background: var(--surface); color: var(--text); font-weight: 600; }
-/* 글자 크기 슬라이더: 양끝의 작은·큰 "가", 오른쪽에 크기 이름 */
-.font-size-row { gap: 8px; }
-.font-size-row .ga { flex: none; color: var(--muted); line-height: 1; }
-.font-size-row .value { width: 56px; }
-
 /* 고정 위치 선택: 화면을 본뜬 2×2 칸 */
 .corners {
   display: grid;
@@ -361,32 +356,14 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
   background: var(--surface);
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.15);
 }
-.menu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 8px;
-}
-.menu-row > span:first-child { flex: none; white-space: nowrap; }
-.menu-row input[type='range'] { flex: 1; min-width: 0; accent-color: var(--accent); }
-.menu-row .value { flex: none; width: 32px; text-align: right; color: var(--muted); font-size: 12px; }
-.menu-controls { display: flex; align-items: center; gap: 8px; }
-.menu-item {
-  padding: 8px;
-  border-radius: 6px;
-  text-align: left;
-}
-.menu-item:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
-.menu-item.danger { color: var(--danger); }
-.menu-row.version { justify-content: center; color: var(--muted); font-size: 12px; }
-
 /* 확인창 */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 20;
   display: grid;
+  /* 칸 폭을 창 폭으로 묶는다. 기본(auto)이면 긴 글자(정류소 이름 등)만큼 칸이 넓어져 시트·창이 화면 밖으로 잘렸다 */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 24px;
   background: rgb(0 0 0 / 0.35);
@@ -621,54 +598,10 @@ input.note-title::placeholder { color: var(--muted); font-weight: 500; }
 }
 
 .mirror { pointer-events: none; }
-.mirror .done,
-.card-body .done { color: var(--muted); text-decoration: line-through; }
 
 /* 링크: 글자 폭은 그대로 두고 색과 밑줄만 (PC는 Ctrl+클릭, 휴대폰은 눌러서 연다) */
 .mirror .link,
 .card-body .link { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
-
-/* 일정이 걸린 체크리스트 항목: 줄 끝에 알림 시각. 자리를 차지하지 않게 띄워 그린다 */
-/* 목록 미리보기: 일정이 걸린 체크리스트 항목 끝의 작은 일정 아이콘 */
-.scheduled { margin-left: 4px; color: var(--accent); }
-.scheduled svg { vertical-align: -1px; }
-
-.mirror .alarm { position: relative; }
-.mirror .alarm::after {
-  content: '🔔 ' attr(data-label);
-  position: absolute;
-  left: 8px;
-  bottom: 0.2em;
-  color: var(--accent);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-/* "- [ ]" 글자 자리에 체크박스를 그린다 */
-.mirror .box { position: relative; color: transparent; }
-.mirror .box::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  transform: translate(-50%, -50%);
-  border: 1.5px solid var(--muted);
-  border-radius: 4px;
-}
-.mirror .box.done::before { background: var(--accent); border-color: var(--accent); }
-.mirror .box.done::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 4px;
-  height: 8px;
-  transform: translate(-50%, -65%) rotate(45deg);
-  border: solid var(--surface);
-  border-width: 0 2px 2px 0;
-}
 
 /* 로그인 */
 .login {
@@ -808,16 +741,6 @@ html.keyboard .app { padding-bottom: 0; }
   font-size: calc(var(--font-size, 15px) - 2px);
 }
 .row-date { flex: none; color: color-mix(in srgb, var(--text) 75%, transparent); }
-.row-progress {
-  flex: none;
-  padding: 0 6px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--text);
-  font-size: 0.85em;
-  line-height: 1.6;
-}
-.row-progress.all { background: color-mix(in srgb, var(--ok) 20%, transparent); }
 .row-preview { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* 버스 번호 뱃지: 부산 버스 차체 색 */
@@ -948,10 +871,6 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .mini-head { display: flex; align-items: center; gap: 4px; }
 .mini-date { flex: 1; font-size: 13px; font-weight: 700; }
 .mini-head .icon-btn { width: 24px; height: 24px; }
-.mini-progress { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.mini-bar { flex: 1; height: 6px; overflow: hidden; border-radius: 3px; background: color-mix(in srgb, var(--text) 10%, transparent); }
-.mini-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s; }
-.mini-bar.full i { background: var(--ok); }
 .mini-bus { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
 
 /* 휴대폰 한 화면: 고른 날 제목을 메모 묶음 제목(고정됨·메모)과 같은 크기로 */
@@ -976,12 +895,10 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
 .cal-widget .schedule:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .cal-widget .cal-empty { margin: 2px 4px 4px; }
 .home > .widget + .list-head { margin-top: 10px; }
-/* 미니 위젯을 더 작게 (폭 200) */
+/* 미니 위젯을 더 작게 */
 .mini-widget { gap: 5px; padding: 5px 6px 7px 9px; border-radius: 12px; }
 .mini-date { font-size: 12px; }
 .mini-head .icon-btn { width: 20px; height: 20px; }
-.mini-progress { gap: 6px; font-size: 10px; }
-.mini-bar { height: 4px; }
 .mini-bus { gap: 3px; padding-top: 5px; }
 .mini-none { font-size: 10px; }
 
@@ -1043,21 +960,283 @@ html:not(.mini) .mini-widget { visibility: hidden; pointer-events: none; }
   background: color-mix(in srgb, var(--accent) 9%, var(--bg));
   font-size: 11px;
   line-height: 1.5;
-  cursor: pointer;
 }
 .bus-banner > svg { flex: none; margin-top: 2px; color: var(--accent); }
-.bus-banner > .cal-caret { flex: none; margin-top: 3px; }
-.bus-banner.open { max-height: 40%; overflow-y: auto; }
 .bus-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .bus-line { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.bus-banner.open .bus-line { white-space: normal; }
-.bus-line-stop { margin-right: 6px; color: var(--muted); }
+.bus-line-stop { margin-right: 6px; color: var(--muted); font-weight: 600; }
 .bus-line-item b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .bus-line-item.near b { color: var(--accent); }
 .bus-line-item.soon b { color: var(--danger); }
 .bus-line-item.none { color: var(--muted); }
 .bus-line-item + .bus-line-item::before { content: '·'; margin: 0 5px; color: var(--muted); }
 .bus-none { color: var(--muted); }
-.mini-bus .bus-line { font-size: 10px; }
-.mini-bus .bus-line-stop { display: block; margin: 0; font-size: 10px; }
+.mini-bus .bus-line { font-size: 11px; line-height: 1.45; }
 .bus-line-item { white-space: nowrap; }
+
+
+/* 할일 (TodoList.tsx): 추가 칸, 할 일(기록한 날), 작업 내역(완료한 날별로 묶음 · 기록한 날 · 걸린 날수) */
+.todo-section { display: contents; }
+.todo-widget { display: flex; flex-direction: column; gap: 1px; }
+.todo-widget .day-head { margin-top: 0; padding: 2px 2px 0; }
+.day-head .text-btn .cal-caret { margin-left: 2px; }
+.todo-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+  padding: 3px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.todo-add:focus-within { border-style: solid; border-color: var(--accent); }
+.todo-add input,
+.todo-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: calc(var(--font-size, 15px) - 2px);
+  outline: none;
+}
+.todo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+.todo:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.pwa .todo { padding: 4px 6px 4px 8px; border: 1px solid var(--line); background: var(--surface); }
+.todo .check {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+}
+.todo .check.on {
+  border-color: var(--ok);
+  background: var(--ok);
+  box-shadow: inset 0 0 0 2px var(--surface);
+}
+.todo-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: calc(var(--font-size, 15px) - 2px);
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.todo.done .todo-text { color: var(--muted); }
+.todo-when { flex: none; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.todo .icon-btn { width: 22px; height: 22px; }
+.todo-more { align-self: center; margin: 2px 0; font-size: 11px; }
+
+/* PC 패널: 카드 사이 간격 */
+.home > .widget + .widget { margin-top: 2px; }
+
+/* 미니 위젯: 날짜 · 펼치기, 아래에 버스 (정류소마다 한 줄) */
+.mini-widget { gap: 3px; padding: 3px 4px 4px 8px; border-radius: 10px; }
+.mini-head { gap: 6px; }
+.mini-date { font-size: 11px; }
+.mini-head .icon-btn { width: 18px; height: 18px; }
+.mini-bus { padding-top: 3px; }
+.mini-bus .bus-line-stop { margin-right: 4px; }
+
+/* 흐르는 글자 (Marquee.tsx): 전광판처럼 오른쪽에서 왼쪽으로 한 바퀴, 처음 자리에서 잠깐 멈췄다가 다시 (멈춤은 Marquee.tsx가 한다) */
+.marquee { overflow: hidden; white-space: nowrap; }
+.marquee-track { display: inline-flex; }
+.marquee-item { flex: none; }
+.marquee-track.moving { animation: marquee linear 1; will-change: transform; }
+.marquee:hover .marquee-track.moving { animation-play-state: paused; }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track.moving { animation: none; }
+}
+.mini-bus .bus-ticker { font-size: 11px; line-height: 1.45; }
+.todo-move { margin: 2px 0; color: var(--muted); font-size: 11px; text-align: center; }
+.todo-move .text-btn { font-size: 11px; }
+
+/* 설정 (MoreMenu.tsx): 묶음마다 제목과 카드, 모든 줄이 같은 틀 (왼쪽 이름 · 오른쪽 조작). PC는 시트, 휴대폰은 펼침 메뉴 */
+.settings-sheet { height: auto; max-height: calc(var(--vv-height, 100vh) - 32px); }
+html.tauri .settings-sheet { cursor: default; }
+.settings-list { display: flex; flex-direction: column; gap: 10px; }
+.menu.settings-list { width: 300px; max-width: calc(100vw - 16px); padding: 8px 8px 4px; gap: 8px; background: var(--bg); }
+.set-head { margin: 0 4px 4px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.set-card { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.set-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+.set-row + .set-row::before { content: ''; position: absolute; top: 0; left: 12px; right: 0; border-top: 1px solid var(--line); }
+.set-label { flex: none; min-width: 72px; white-space: nowrap; }
+.set-control { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.set-control input[type='range'] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.set-value { flex: none; min-width: 40px; overflow: hidden; color: var(--muted); font-size: 13px; text-align: right; white-space: nowrap; text-overflow: ellipsis; }
+.set-link .set-control { color: var(--muted); }
+.set-link:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.set-link:disabled { cursor: default; }
+.set-link.danger .set-label { color: var(--danger); }
+.set-row .segment button { min-width: 44px; padding: 3px 10px; font-size: 13px; }
+.set-version { margin: 0 0 4px; color: var(--muted); font-size: 11px; text-align: center; }
+
+
+/* 할일 = 작업 대장: 머리줄의 [진행 중 | 완료 기록] 탭, 완료 기록은 달 → 날짜로 묶고 줄마다 "받은 날 → 완료한 날 · 걸린 날수" */
+.todo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; padding: 2px 2px 0; }
+.todo-head .list-head { margin: 0 2px; }
+.pwa .todo-head { margin-top: 6px; }
+.pwa .todo-head .list-head { color: var(--text); font-size: 13px; font-weight: 700; }
+.todo-tabs button { padding: 2px 10px; font-size: 11px; }
+.todo-when b { color: var(--text); font-weight: 600; }
+
+/* 메인 화면 (App.tsx): 일정·할일·메모 요약 카드, 머리줄에 제목 · 개수 · 더보기 › */
+.home-card { display: flex; flex-direction: column; gap: 1px; }
+.home-card-head { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 0 2px 2px; }
+.home-card-head .list-head { margin: 0; color: var(--text); font-size: 12px; font-weight: 700; }
+.home-card-count { color: var(--muted); font-size: 11px; }
+.home-more { display: flex; align-items: center; gap: 1px; margin-left: auto; padding: 0 2px; font-size: 11px; }
+.note-widget { gap: 4px; }
+.note-widget .card { border: 0; background: color-mix(in srgb, var(--text) 3%, transparent); }
+.note-widget .rows { border: 0; }
+.home > .widget + .widget { margin-top: 2px; }
+
+/* 전용 페이지: ‹ 제목 */
+.page-head { display: flex; align-items: center; gap: 4px; min-height: 30px; }
+.page-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.page-count { color: var(--muted); font-size: 12px; }
+.todo-widget .todo-head .text-btn { display: flex; align-items: center; gap: 2px; font-size: 11px; }
+
+/* 할일 그룹 (TodoPage): ▾ 이름 개수 [+] */
+.todo-section-group + .todo-section-group { margin-top: 4px; }
+.todo-group-head { display: flex; align-items: center; gap: 4px; min-height: 26px; }
+.todo-group-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; padding: 0 4px; color: var(--text); font-size: 12px; font-weight: 700; text-align: left; }
+.todo-count { color: var(--muted); font-size: 11px; font-weight: 400; }
+.todo-group-head .icon-btn { width: 22px; height: 22px; }
+.todo-chip {
+  margin-right: 5px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+  font-size: 0.85em;
+}
+
+/* 메인 화면 칸의 + 등록 줄 (일정·메모는 버튼, 할일은 입력칸) 과 메모 한 줄 */
+.home-add,
+.home-card .todo-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 26px;
+  margin: 1px 0 2px;
+  padding: 3px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: calc(var(--font-size, 15px) - 2px);
+  text-align: left;
+}
+.home-add:hover { border-color: var(--accent); color: var(--text); }
+.home-row { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 24px; padding: 2px 4px 2px 6px; border-radius: 8px; text-align: left; }
+.home-row:hover, .home-card .schedule:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.home-row > svg { flex: none; color: var(--accent); }
+.home-row-title { flex: 1; min-width: 0; overflow: hidden; font-size: calc(var(--font-size, 15px) - 2px); white-space: nowrap; text-overflow: ellipsis; }
+.home-row-date { flex: none; color: var(--muted); font-size: 10px; }
+.home-card .schedule { padding: 2px 4px; border: 0; background: none; }
+
+/* 줄 전체를 누르면 고치기 창 (할일·일정). 체크박스만 따로 */
+.todo[role='button'],
+.schedule[role='button'] { cursor: pointer; }
+html.tauri .todo[role='button'],
+html.tauri .schedule[role='button'] { cursor: pointer; }
+.schedule[role='button']:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+
+/* + 등록 줄 오른쪽의 단축키 안내 (PC) */
+.kbd {
+  flex: none;
+  margin-left: auto;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.home-card .todo-add:focus-within { border-style: solid; border-color: var(--accent); }
+
+/* 휴대폰 (App.tsx): 아래 탭 [일정 | 할일 | 메모], 탭마다 오른쪽 아래 + 플로팅 버튼 */
+.pwa-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.pwa-main > .list { padding-bottom: 84px; } /* 마지막 줄이 + 버튼에 가리지 않게 */
+.pwa-search { position: sticky; top: -4px; z-index: 1; margin: 0 -10px; padding: 4px 10px 6px; background: var(--bg); }
+.pwa-search .search { width: 100%; margin: 0; }
+.fab {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #1c1c1e;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+.fab:active { transform: scale(0.94); }
+.tabbar { flex: none; display: flex; border-top: 1px solid var(--line); background: var(--surface); }
+.tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 4px; color: var(--muted); font-size: 11px; }
+.tabbar button.on { color: var(--accent); font-weight: 600; }
+.tabbar + .statusbar { border-top: 0; background: var(--surface); }
+
+/* 휴대폰 홈의 + 메뉴: + 버튼 위로 [일정 · 할일 · 메모 등록]. 바깥을 누르면 닫힌다 */
+.fab-menu { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 8px; padding: 0 16px 82px; background: rgb(0 0 0 / 0.2); }
+.fab-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+.fab-menu button svg { color: var(--accent); }
+.fab svg { transition: transform 0.15s; }
+.fab.open svg { transform: rotate(45deg); }
+.pwa .home .widget { padding: 6px 10px 8px; }
+
+/* 미니 위젯: 할일 개수 · 다음 일정 한 줄 */
+.mini-todos { flex: none; padding: 0 4px; border-radius: 4px; color: var(--muted); font-size: 10px; }
+.mini-todos b { color: var(--text); font-weight: 700; }
+.mini-todos:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.mini-next { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; white-space: nowrap; }
+.mini-next > svg { flex: none; color: var(--accent); }
+.mini-next-when { flex: none; color: var(--accent); font-weight: 600; }
+.mini-next-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mini-next.none { color: var(--muted); }
+.mini-next.none > svg { color: var(--muted); }
+

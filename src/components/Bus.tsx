@@ -16,6 +16,7 @@ import {
 } from '../lib/bus'
 import { useOverlayClose } from '../lib/overlay'
 import { Icon } from './Icon'
+import { Marquee } from './Marquee'
 
 
 // 노선 번호 색: 부산 버스 차체 색을 따른다
@@ -45,10 +46,13 @@ export function eta(a: Arrival | undefined): { main: string; sub: string; tone: 
 
 type Entry = { f: BusFavorite; a: Arrival | undefined; e: ReturnType<typeof eta>; min: number | null }
 
-/** 정류소별로 묶는다. 묶음 순서는 들어온 순서 (near는 남은 시간순이라 곧 오는 버스가 있는 정류소가 앞으로) */
+// 남은 시간순. 도착 정보가 없는 버스는 뒤로
+const soonest = (x: Entry, y: Entry) => (x.min ?? Infinity) - (y.min ?? Infinity)
+
+/** 정류소별로 묶는다. 묶음 안은 빨리 오는 버스부터, 묶음끼리는 가장 빨리 오는 버스가 있는 정류소부터 */
 function byStop(entries: Entry[]) {
   const groups: { bstopid: string; stop: string; items: Entry[] }[] = []
-  for (const x of entries) {
+  for (const x of [...entries].sort(soonest)) {
     const g = groups.find((y) => y.bstopid === x.f.bstopid)
     if (g) g.items.push(x)
     else groups.push({ bstopid: x.f.bstopid, stop: x.f.stop, items: [x] })
@@ -63,10 +67,10 @@ function arrivalWords({ a, min }: Entry): { strong: string; rest: string } {
   return { strong: '', rest: a?.status || '정보 없음' }
 }
 
-/** 정류소마다 한 줄: "부산시청  1001번 곧 도착 · 106번 8분 후 도착" */
-export function StopLines({ entries }: { entries: Entry[] }) {
-  return byStop(entries).map((g) => (
-    <div key={g.bstopid} className="bus-line">
+/** 한 정류소: "부산시청  1001번 곧 도착 · 106번 8분 후 도착" (빨리 오는 버스부터) */
+function StopGroup({ g }: { g: ReturnType<typeof byStop>[number] }) {
+  return (
+    <>
       <span className="bus-line-stop">{g.stop}</span>
       {g.items.map((x) => {
         const w = arrivalWords(x)
@@ -77,57 +81,50 @@ export function StopLines({ entries }: { entries: Entry[] }) {
           </span>
         )
       })}
-    </div>
-  ))
-}
-
-/** 이 시간(분) 안에 오는 버스만 보인다 (배너를 펴면 전부) */
-export const NEAR_MIN = 10
-
-/** 즐겨찾기마다 도착정보를 붙인다. near: NEAR_MIN 안에 오는 것만 남은 시간순으로 */
-export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arrival[]>) {
-  const all: Entry[] = favorites.map((f) => {
-    const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
-    return { f, a, e: eta(a), min: a?.buses[0]?.min ?? null }
-  })
-  const near = all.filter((x) => x.min !== null && x.min <= NEAR_MIN).sort((x, y) => x.min! - y.min!)
-  return { all, near }
+    </>
+  )
 }
 
 /**
- * 화면 맨 아래의 버스 배너. 일정·메모가 주인공이라 버스는 한두 줄로만: 10분 안에 오는 버스를 정류소별로.
- * 누르면 즐겨찾기 전부를 펴고 접는다 (멈춰 있었으면 새로 받는다). 편집은 상단 버스 버튼에서.
+ * 흐르는 글자: 즐겨찾기한 정류소마다 한 줄씩(정류소 수만큼 줄이 생긴다), 줄마다 정류소 이름 뒤에 빨리 오는 버스부터.
+ * 가장 빨리 오는 버스가 있는 정류소가 맨 위. PC·휴대폰·미니 위젯 공통.
+ */
+export function BusTicker({ entries }: { entries: Entry[] }) {
+  return byStop(entries).map((g) => (
+    <Marquee key={g.bstopid} className="bus-line bus-ticker">
+      <StopGroup g={g} />
+    </Marquee>
+  ))
+}
+
+/** 즐겨찾기마다 도착정보를 붙인다 */
+export function withEta(favorites: BusFavorite[], arrivals: Record<string, Arrival[]>): Entry[] {
+  return favorites.map((f) => {
+    const a = arrivals[f.bstopid]?.find((x) => x.lineid === f.lineid)
+    return { f, a, e: eta(a), min: a?.buses[0]?.min ?? null }
+  })
+}
+
+/**
+ * 화면 맨 아래의 버스 배너: 즐겨찾기한 정류소마다 흐르는 한 줄 (BusTicker).
+ * 도착 정보가 멈춰 있거나 받지 못했으면 누를 때 새로 받는다. 편집은 설정 메뉴의 버스 즐겨찾기에서.
  */
 export function BusBanner({ favorites }: { favorites: BusFavorite[] }) {
   const { byStop: arrivals, at, error, paused, refresh } = useArrivals(favorites)
-  const [open, setOpen] = useState(false)
-  const { all, near } = withEta(favorites, arrivals)
-  const shown = open ? all : near
-
   return (
     <div
-      className={`bus-banner${open ? ' open' : ''}`}
-      role="button"
-      aria-expanded={open}
-      title={open ? '접기' : '전체 보기'}
-      onClick={() => {
-        setOpen(!open)
-        if (paused || error) refresh()
-      }}
+      className="bus-banner"
+      title={paused || error ? '눌러서 새로 받기' : undefined}
+      onClick={() => (paused || error) && refresh()}
     >
       <Icon name="bus" size={13} />
       <div className="bus-lines">
-        {!at ? (
-          <span className="bus-none">{error ? '버스 정보를 받지 못함' : '…'}</span>
-        ) : shown.length ? (
-          <StopLines entries={shown} />
+        {at ? (
+          <BusTicker entries={withEta(favorites, arrivals)} />
         ) : (
-          <span className="bus-none">{NEAR_MIN}분 내 도착 없음</span>
+          <span className="bus-none">{error ? '버스 정보를 받지 못함' : '…'}</span>
         )}
       </div>
-      <span className={`cal-caret${open ? '' : ' up'}`}>
-        <Icon name="forward" size={10} />
-      </span>
     </div>
   )
 }
