@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react
 import { linkAt, plain } from '../lib/markup'
 import { deleteNote, setNoteLocked, updateLockedNote, updateNote, type Note } from '../lib/notes'
 import { openUrl } from '../lib/openUrl'
+import { macDesktop } from '../lib/platform'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Icon } from './Icon'
 import { PassPrompt } from './LockForm'
 import { MarkupText } from './MarkupText'
+import { TrafficLights } from './TrafficLights'
 
 // 타이핑마다 쓰면 통신이 잦고 무료 한도(쓰기 2만/일)도 금방 쓰므로 입력이 멈춘 뒤 한 번만 저장한다.
 // 화면을 떠나거나 앱이 백그라운드로 가면 기다리지 않고 저장한다.
@@ -136,6 +138,8 @@ export function NoteEditor({ uid, note, onBack, onTyping, onPopOut, standalone }
   return (
     <div className="editor">
       <div className="editor-bar">
+        {/* 따로 띄운 메모 창: macOS는 왼쪽 빨강 신호등이 닫기 */}
+        {standalone && macDesktop && <TrafficLights onClose={back} />}
         {!standalone && (
           <button className="icon-btn" onClick={back} title="목록으로 (Esc)">
             <Icon name="back" />
@@ -171,7 +175,7 @@ export function NoteEditor({ uid, note, onBack, onTyping, onPopOut, standalone }
         <button className="icon-btn" onClick={askRemove} title="삭제">
           <Icon name="trash" />
         </button>
-        {standalone && (
+        {standalone && !macDesktop && (
           <button className="icon-btn" onClick={back} title="닫기 (Esc)">
             <Icon name="close" />
           </button>

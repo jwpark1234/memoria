@@ -1,10 +1,12 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { playChiptune, type Song } from '../lib/chiptune'
+import { macDesktop } from '../lib/platform'
 import { applyUpdate, useUpdate } from '../lib/update'
 import { mainWindow, setWidget } from '../lib/widget'
 import { EasterEgg } from './EasterEgg'
 import { Icon } from './Icon'
 import { MoreMenu } from './MoreMenu'
+import { TrafficLights } from './TrafficLights'
 
 export function TitleBar({ children }: { children?: ReactNode }) {
   const win = mainWindow
@@ -25,6 +27,8 @@ export function TitleBar({ children }: { children?: ReactNode }) {
     <>
       {/* 창 끌기는 lib/widget.ts가 창 전체에서 처리한다 */}
       <header className="titlebar">
+        {/* macOS: 빨강은 창 숨기기(다시 열기는 메뉴 막대 아이콘·Dock), 노랑은 미니모드 */}
+        {macDesktop && win && <TrafficLights onClose={() => win.hide()} onMinimize={() => setWidget({ mini: true })} />}
         <span className="title" onClick={tapTitle}>
           Memoria
         </span>
@@ -43,10 +47,12 @@ export function TitleBar({ children }: { children?: ReactNode }) {
         {win && (
           <>
             <MoreMenu />
-            {/* 숨기기·종료는 트레이 아이콘에서 한다 */}
-            <button className="icon-btn" onClick={() => setWidget({ mini: true })} title="미니모드 (Esc)">
-              <Icon name="shrink" />
-            </button>
+            {/* 숨기기·종료는 트레이 아이콘에서 한다. macOS는 노랑 신호등이 미니모드 */}
+            {!macDesktop && (
+              <button className="icon-btn" onClick={() => setWidget({ mini: true })} title="미니모드 (Esc)">
+                <Icon name="shrink" />
+              </button>
+            )}
           </>
         )}
       </header>

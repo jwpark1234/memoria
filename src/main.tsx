@@ -7,9 +7,11 @@ import { applyFontSize } from './lib/fontSize'
 import { applyTheme } from './lib/theme'
 import { initUpdate } from './lib/update'
 import { fitVisualViewport } from './lib/viewport'
+import { initPlatform } from './lib/platform'
 import { initWidget, win } from './lib/widget'
 import './styles.css'
 
+initPlatform()
 initWidget()
 applyTheme()
 applyFontSize()

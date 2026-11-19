@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { useOverlayClose } from '../lib/overlay'
+import { macDesktop } from '../lib/platform'
 import { changeLock, setupLock, unlock, useLockMeta, useUnlocked, type LockMeta } from '../lib/lock'
 import { Icon } from './Icon'
+import { TrafficLights } from './TrafficLights'
 
 const MIN_LENGTH = 6
 
@@ -117,13 +119,14 @@ export function LockedNote({
   return (
     <div className="editor">
       <div className="editor-bar">
+        {standalone && macDesktop && <TrafficLights onClose={onBack} />}
         {!standalone && (
           <button className="icon-btn" onClick={onBack} title="목록으로">
             <Icon name="back" />
           </button>
         )}
         <span className={`note-title${title ? '' : ' placeholder'}`}>{title || '잠긴 메모'}</span>
-        {standalone && (
+        {standalone && !macDesktop && (
           <button className="icon-btn" onClick={onBack} title="닫기">
             <Icon name="close" />
           </button>

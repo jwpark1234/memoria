@@ -67,7 +67,7 @@ function arrivalWords({ a, min }: Entry): { strong: string; rest: string } {
   return { strong: '', rest: a?.status || '정보 없음' }
 }
 
-/** 한 정류소: "부산시청  1001번 곧 도착 · 106번 8분 후 도착" (빨리 오는 버스부터) */
+/** 한 정류소: "부산시청 | [1001] 곧 도착  [106] 8분 후 도착" (빨리 오는 버스부터). 버스 번호는 차체 색 뱃지 */
 function StopGroup({ g }: { g: ReturnType<typeof byStop>[number] }) {
   return (
     <>
@@ -76,7 +76,8 @@ function StopGroup({ g }: { g: ReturnType<typeof byStop>[number] }) {
         const w = arrivalWords(x)
         return (
           <span key={x.f.lineid} className={`bus-line-item ${x.e.tone}`}>
-            {x.f.lineno}번 {w.strong && <b>{w.strong}</b>}
+            <span className={`bus-no tiny ${lineKind(x.a?.bustype)}`}>{x.f.lineno}</span>
+            {w.strong && <b>{w.strong}</b>}
             {w.rest}
           </span>
         )
