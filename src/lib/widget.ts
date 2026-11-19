@@ -357,19 +357,11 @@ export function initWidget() {
   document.documentElement.classList.add('tauri')
   enableDrag(win)
   if (!mainWindow) return
-  if (settings.mini) applyMini(true, false)
-  else {
-    // 지난번 크기로 편다
-    currentMonitor().then((monitor) => {
-      if (!monitor || settings.mini) return
-      const want = {
-        width: Math.round(settings.size.width * monitor.scaleFactor),
-        height: Math.round(settings.size.height * monitor.scaleFactor),
-      }
-      applyWindow(mainWindow!, monitor, want).catch((e) => console.warn('[widget]', e))
-    })
-  }
-  restoreNoteWindows(settings.mini)
+  // 켜면 늘 미니모드로 시작한다 (PC를 켤 때 자동 실행돼도 화면을 가리지 않게). 펼치면 지난번 크기로 열린다.
+  settings = { ...settings, mini: true }
+  save()
+  applyMini(true, false)
+  restoreNoteWindows(true)
   mainWindow.onResized(() => snap())
   mainWindow.onScaleChanged(() => snap())
   setInterval(snap, NEIGHBOR_POLL)
